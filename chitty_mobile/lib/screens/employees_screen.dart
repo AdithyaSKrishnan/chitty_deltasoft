@@ -15,6 +15,10 @@ class _EmployeesScreenState
     extends State<EmployeesScreen> {
 
   List<dynamic> employees = [];
+  List<dynamic> filteredEmployees = [];
+  String searchText = '';
+  String selectedStatus = 'All Status';
+  String selectedRole = 'All Roles';
   @override
 void initState() {
   super.initState();
@@ -24,14 +28,57 @@ void initState() {
 Future<void> loadEmployees() async {
   print("Loading employees...");
   final data = await AuthService.getEmployees();
-   print("Employees loaded:");
-   print(data);
+  print("Employees loaded:");
+  print(data);
   setState(() {
-    employees = data;
-  });
 
-  //
-  //print(data);
+    employees = data;
+    applyFilters();
+});  
+}
+void applyFilters() {
+  filteredEmployees = employees.where((e) {
+    final name =
+        (e['full_name_display'] ?? '')
+            .toString()
+            .toLowerCase();
+
+    final username =
+        (e['username_display'] ?? '')
+            .toString()
+            .toLowerCase();
+
+    final role =
+        (e['role'] ?? '')
+            .toString()
+            .toLowerCase();
+
+    final status =
+        e['is_active'] == true
+            ? 'active'
+            : 'inactive';
+
+    final matchesSearch =
+        name.contains(searchText.toLowerCase()) ||
+        username.contains(searchText.toLowerCase());
+
+    final matchesRole =
+        selectedRole == 'All Roles' ||
+        role ==
+            selectedRole.toLowerCase().replaceAll(
+                  ' ',
+                  '_',
+                );
+
+    final matchesStatus =
+        selectedStatus == 'All Status' ||
+        status ==
+            selectedStatus.toLowerCase();
+
+    return matchesSearch &&
+        matchesRole &&
+        matchesStatus;
+  }).toList();
 }
   @override
   Widget build(BuildContext context) {
@@ -191,7 +238,7 @@ Future<void> loadEmployees() async {
                                         Expanded(
                                           child:
                                               dropdownBox(
-                                            'All Roles',
+                                            'All Roles',true
                                           ),
                                         ),
 
@@ -201,7 +248,7 @@ Future<void> loadEmployees() async {
                                         Expanded(
                                           child:
                                               dropdownBox(
-                                            'All Status',
+                                            'All Status',false
                                           ),
                                         ),
                                       ],
@@ -223,7 +270,7 @@ Future<void> loadEmployees() async {
                                       width: 170,
                                       child:
                                           dropdownBox(
-                                        'All Roles',
+                                        'All Roles', true
                                       ),
                                     ),
 
@@ -234,7 +281,7 @@ Future<void> loadEmployees() async {
                                       width: 170,
                                       child:
                                           dropdownBox(
-                                        'All Status',
+                                        'All Status', false
                                       ),
                                     ),
                                   ],
@@ -246,7 +293,7 @@ Future<void> loadEmployees() async {
                           mobile
                               ? Column(
                                   children:
-                                      employees.map((e) {
+                                      filteredEmployees.map((e) {
 
                                     return mobileCard(
                                         e);
@@ -313,7 +360,7 @@ Future<void> loadEmployees() async {
                                     ],
 
                                     rows:
-                                        employees.map((e) {
+                                        filteredEmployees.map((e) {
 
                                       return DataRow(
                                         cells: [
@@ -498,6 +545,12 @@ Text(
   Widget searchBox() {
 
     return TextField(
+      onChanged: (value) {
+  setState(() {
+    searchText = value;
+    applyFilters();
+  });
+},
 
       style: const TextStyle(color: Colors.white),
 
@@ -525,7 +578,10 @@ Text(
     );
   }
 
-  Widget dropdownBox(String hint) {
+  Widget dropdownBox(
+  String hint,
+  bool isRole,
+) {
 
     return Container(
 
@@ -545,7 +601,9 @@ Text(
           dropdownColor:
               const Color(0xFF0F172A),
 
-          value: hint,
+          value: isRole
+    ? selectedRole
+    : selectedStatus,
 
           iconEnabledColor: Colors.white,
 
@@ -553,15 +611,45 @@ Text(
             color: Colors.white,
           ),
 
-          items: [
-
-            DropdownMenuItem(
-              value: hint,
-              child: Text(hint),
-            ),
-          ],
-
-          onChanged: (value) {},
+ items: isRole
+    ? const [
+        DropdownMenuItem(
+          value: 'All Roles',
+          child: Text('All Roles'),
+        ),
+        DropdownMenuItem(
+          value: 'Admin',
+          child: Text('Admin'),
+        ),
+        DropdownMenuItem(
+          value: 'Field Agent',
+          child: Text('Field Agent'),
+        ),
+      ]
+    : const [
+        DropdownMenuItem(
+          value: 'All Status',
+          child: Text('All Status'),
+        ),
+        DropdownMenuItem(
+          value: 'Active',
+          child: Text('Active'),
+        ),
+        DropdownMenuItem(
+          value: 'Inactive',
+          child: Text('Inactive'),
+        ),
+      ],
+   onChanged: (value) {
+  setState(() {
+    if (isRole) {
+      selectedRole = value!;
+    } else {
+      selectedStatus = value!;
+    }
+    applyFilters();
+  });
+},
         ),
       ),
     );
