@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -442,3 +442,47 @@ def payment_overview(request):
         "pending": pending,
         "overdue": overdue
     })
+class AgentDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee = Employee.objects.get(
+            user=request.user,
+        )
+
+        customers = Customer.objects.filter(
+            created_by=employee
+        )
+
+        subscriptions = Subscription.objects.filter(
+            customer__created_by=employee,
+            subscription_status='active',
+        )
+
+        recent_customers = customers.order_by(
+            '-created_at'
+        )[:5]
+
+
+        recent_data = []
+
+        for customer in recent_customers:
+            latest_sub = customer.subscriptions.first()
+
+            recent_data.append({
+                'name': customer.full_name,
+                'phone': customer.mobile_number,
+                'plan': (
+                    latest_sub.chit_plan.chit_name
+                    if latest_sub
+                    else '-'
+                ),
+            })
+
+        return Response({
+            'total_customers': customers.count(),
+            'active_subscriptions':
+                subscriptions.count(),
+            'recent_customers':
+                recent_data,
+        })

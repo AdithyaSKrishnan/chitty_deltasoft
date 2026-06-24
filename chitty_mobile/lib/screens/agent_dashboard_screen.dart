@@ -1,11 +1,46 @@
 import 'package:flutter/material.dart';
 import 'agent_subscriptions_screen.dart';
 import 'customers_screen.dart';
-
+import '../services/auth_service.dart';
 import 'login_screen.dart';
 
-class AgentDashboardScreen extends StatelessWidget {
+class AgentDashboardScreen extends StatefulWidget {
   const AgentDashboardScreen({super.key});
+
+  @override
+  State<AgentDashboardScreen> createState() =>
+      _AgentDashboardScreenState();
+}
+
+class _AgentDashboardScreenState
+    extends State<AgentDashboardScreen> {
+
+  int totalCustomers = 0;
+  int activeSubscriptions = 0;
+
+  List<dynamic> recentCustomers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadDashboard();
+  }
+
+  Future<void> loadDashboard() async {
+    final data =
+        await AuthService.getAgentDashboard();
+
+    setState(() {
+      totalCustomers =
+          data['total_customers'] ?? 0;
+
+      activeSubscriptions =
+          data['active_subscriptions'] ?? 0;
+
+      recentCustomers =
+          data['recent_customers'] ?? [];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +50,110 @@ class AgentDashboardScreen extends StatelessWidget {
     bool mobile = width < 900;
 
     return Scaffold(
+  backgroundColor: const Color(0xFF020617),
 
-      backgroundColor: const Color(0xFF020617),
+  appBar: mobile
+      ? AppBar(
+          backgroundColor: const Color(0xFF020617),
+          elevation: 0,
+          iconTheme:
+            const IconThemeData(
+           color: Colors.white,
+        ),
+      )
+      : null,
 
-      body: Row(
+  drawer: mobile
+      ? Drawer(
+          child: Container(
+            color: const Color(0xFF081028),
+            child: Column(
+              children: [
+                const SizedBox(height: 50),
+
+                ListTile(
+                  leading: const Icon(Icons.dashboard,
+                      color: Colors.white),
+                  title: const Text(
+                    'Dashboard',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const AgentDashboardScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.people,
+                      color: Colors.white),
+                  title: const Text(
+                    'Customers',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const CustomersScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.subscriptions,
+                      color: Colors.white),
+                  title: const Text(
+                    'Subscriptions',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const AgentSubscriptionsScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const Spacer(),
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout,
+                    color: Colors.red,
+                  ),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        )
+      : null,
+
+  body: Row(
 
         children: [
 
@@ -230,32 +365,19 @@ class AgentDashboardScreen extends StatelessWidget {
                       children: [
 
                         statsCard(
-                          'Total Customers',
-                          '45',
-                          Icons.people,
-                          Colors.blue,
-                        ),
+  'Total Customers',
+  totalCustomers.toString(),
+  Icons.people,
+  Colors.blue,
+),
 
-                        statsCard(
-                          'Active Subscriptions',
-                          '18',
-                          Icons.subscriptions,
-                          Colors.green,
-                        ),
-
-                        statsCard(
-                          'Pending Collections',
-                          '₹25,000',
-                          Icons.warning_amber,
-                          Colors.orange,
-                        ),
-
-                        statsCard(
-                          'Monthly Collection',
-                          '₹1,20,000',
-                          Icons.currency_rupee,
-                          Colors.purple,
-                        ),
+statsCard(
+  'Active Subscriptions',
+  activeSubscriptions.toString(),
+  Icons.subscriptions,
+  Colors.green,
+),
+                        
                       ],
                     ),
 
@@ -275,89 +397,28 @@ class AgentDashboardScreen extends StatelessWidget {
                         children: [
 
                           tableRow(
-                            true,
-                            'Customer',
-                            'Phone',
-                            'Plan',
-                            'Status',
-                          ),
+  true,
+  'Customer',
+  'Phone',
+  'Plan',
+  '',
+),
 
-                          tableRow(
-                            false,
-                            'Rahul',
-                            '9876543210',
-                            'Gold Plan',
-                            'Active',
-                          ),
-
-                          tableRow(
-                            false,
-                            'Anand',
-                            '9123456780',
-                            'Silver Plan',
-                            'Pending',
-                          ),
-
-                          tableRow(
-                            false,
-                            'Riya',
-                            '9988776655',
-                            'Premium',
-                            'Active',
-                          ),
+                          ...recentCustomers.map(
+  (customer) => tableRow(
+    false,
+    customer['name'] ?? '',
+    customer['phone'] ?? '',
+    customer['plan'] ?? '',
+    '',
+  ),
+),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 35),
-
-                    /// PENDING PAYMENTS
-                    sectionTitle(
-                      'Pending Payments',
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    tableContainer(
-
-                      child: Column(
-
-                        children: [
-
-                          tableRow(
-                            true,
-                            'Customer',
-                            'Amount',
-                            'Due Date',
-                            'Status',
-                          ),
-
-                          tableRow(
-                            false,
-                            'Rahul',
-                            '₹5,000',
-                            '12 Jun',
-                            'Pending',
-                          ),
-
-                          tableRow(
-                            false,
-                            'Anand',
-                            '₹8,000',
-                            '15 Jun',
-                            'Pending',
-                          ),
-
-                          tableRow(
-                            false,
-                            'Riya',
-                            '₹4,000',
-                            '18 Jun',
-                            'Pending',
-                          ),
-                        ],
-                      ),
-                    ),
+                    
+                    
                   ],
                 ),
               ),

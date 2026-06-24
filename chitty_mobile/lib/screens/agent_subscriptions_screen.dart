@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-
+import '../widgets/subscription_dialog.dart';
 class AgentSubscriptionsScreen extends StatefulWidget {
   const AgentSubscriptionsScreen({super.key});
 
@@ -119,38 +119,27 @@ class _AgentSubscriptionsScreenState extends State<AgentSubscriptionsScreen> {
 
             const SizedBox(height: 30),
 
-            Row(
-              children: [
+            ElevatedButton.icon(
+  onPressed: () async {
+    final result = await showDialog(
+      context: context,
+      builder: (_) => const SubscriptionDialog(),
+    );
 
-                Expanded(
-                  child: buildCard(
-                    'Active',
-                    '18',
-                    Icons.subscriptions,
-                  ),
-                ),
-
-                const SizedBox(width: 20),
-
-                Expanded(
-                  child: buildCard(
-                    'Pending',
-                    '₹25,000',
-                    Icons.warning_amber_rounded,
-                  ),
-                ),
-
-                const SizedBox(width: 20),
-
-                Expanded(
-                  child: buildCard(
-                    'Collected',
-                    '₹1,20,000',
-                    Icons.currency_rupee,
-                  ),
-                ),
-              ],
-            ),
+    if (result == true) {
+      await _loadSubscriptions();
+    }
+  },
+  icon: const Icon(Icons.add),
+  label: const Text('Enroll Customer'),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.blue,
+    padding: const EdgeInsets.symmetric(
+      horizontal: 24,
+      vertical: 16,
+    ),
+  ),
+),
 
             const SizedBox(height: 40),
 
@@ -236,65 +225,6 @@ class _AgentSubscriptionsScreenState extends State<AgentSubscriptionsScreen> {
 
             const SizedBox(height: 40),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(20),
-              ),
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: [
-
-                  const Text(
-                     "Today's Collection Summary",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  const ListTile(
-                    leading: Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                    ),
-                    title: Text(
-                      '12 Collections Completed',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-
-                  const ListTile(
-                    leading: Icon(
-                      Icons.currency_rupee,
-                      color: Colors.blue,
-                    ),
-                    title: Text(
-                      '₹45,000 Collected Today',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-
-                  const ListTile(
-                    leading: Icon(
-                      Icons.pending_actions,
-                      color: Colors.orange,
-                    ),
-                    title: Text(
-                      '6 Payments Pending',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

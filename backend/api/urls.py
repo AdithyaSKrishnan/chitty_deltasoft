@@ -12,6 +12,7 @@ from .views import (
     HomeAddressViewSet,
     SubscriptionViewSet,
     WorkAddressViewSet,
+    AgentDashboardAPIView,
     reports_summary,
     monthly_collections,
     plan_distribution,
@@ -33,6 +34,11 @@ urlpatterns = [
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('dashboard/stats/', DashboardStatsAPIView.as_view(), name='dashboard-stats'),
+    path(
+    'agent-dashboard/',
+    AgentDashboardAPIView.as_view(),
+    name='agent-dashboard',
+),
     path(
         'dashboard/recent-customers/',
         DashboardRecentCustomersAPIView.as_view(),

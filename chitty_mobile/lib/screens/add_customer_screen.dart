@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../services/auth_service.dart';
-import '../widgets/subscription_dialog.dart';
+//import '../widgets/subscription_dialog.dart';
 import 'dart:io';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as latlng;
 
 
 import 'package:image_picker/image_picker.dart';
@@ -65,12 +67,12 @@ final officePhoneController =
 
 final officeLandmarkController =
     TextEditingController();
-  bool enrollInChitPlan = false;
+  //bool enrollInChitPlan = false;
   File? customerPhotoFile;
 File? addressProofFile;
 File? idProofFile;
-  int? selectedPlanId;
-  String? selectedJoinedDate;
+  //int? selectedPlanId;
+  //String? selectedJoinedDate;
   Future<void> pickImage(String type) async {
   final picker = ImagePicker();
 
@@ -173,43 +175,9 @@ longitude: customerLocation.longitude,
     );
 
     if (created != null) {
-      final customerId = created['id'];
+      //final customerId = created['id'];
 
-      if (enrollInChitPlan) {
-        if (selectedPlanId == null || selectedJoinedDate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Missing plan or joined date for enrollment'),
-            ),
-          );
-          // Keep customer created
-          return;
-        }
-
-        final subSuccess = await AuthService.createSubscription(
-          customerId: customerId,
-          chitPlanId: selectedPlanId!,
-          joinedDate: selectedJoinedDate!,
-        );
-
-        if (subSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Customer and enrollment created successfully'),
-            ),
-          );
-          Navigator.pop(context, true);
-          return;
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Customer created but enrollment failed'),
-            ),
-          );
-          // keep customer created, do not pop
-          return;
-        }
-      }
+      
 
       // Not enrolling: success
       ScaffoldMessenger.of(context).showSnackBar(
@@ -229,12 +197,13 @@ longitude: customerLocation.longitude,
     }
   }
 
-  GoogleMapController? mapController;
+  //GoogleMapController? mapController;
 
-  LatLng customerLocation = const LatLng(
-    8.8932,
-    76.6141,
-  );
+  latlng.LatLng customerLocation =
+    const latlng.LatLng(
+  8.8932,
+  76.6141,
+);
   Future<void> getCurrentLocation() async {
 
   bool serviceEnabled =
@@ -264,17 +233,13 @@ longitude: customerLocation.longitude,
 
   setState(() {
 
-    customerLocation = LatLng(
-      position.latitude,
-      position.longitude,
-    );
+    customerLocation = latlng.LatLng(
+  position.latitude,
+  position.longitude,
+);
   });
 
-  mapController?.animateCamera(
-    CameraUpdate.newLatLng(
-      customerLocation,
-    ),
-  );
+  
 }
 
   Widget buildField(
@@ -608,52 +573,42 @@ buildField(
                 ),
 
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+  borderRadius: BorderRadius.circular(24),
+  child: FlutterMap(
+    options: MapOptions(
+      initialCenter: customerLocation,
+      initialZoom: 14,
+      onTap: (tapPosition, point) {
+        setState(() {
+          customerLocation = point;
+        });
+      },
+    ),
+    children: [
+      TileLayer(
+        urlTemplate:
+            'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+        userAgentPackageName:
+            'com.example.chitty_mobile',
 
-                  child: GoogleMap(
-
-                    initialCameraPosition:
-                        CameraPosition(
-                      target: customerLocation,
-                      zoom: 14,
-                    ),
-
-                    onMapCreated: (controller) {
-                      mapController = controller;
-                    },
-                    onTap: (LatLng position) {
-
-  setState(() {
-
-    customerLocation = position;
-  });
-},
-                    markers: {
-
-                      Marker(
-                        markerId:
-                            const MarkerId('customer'),
-
-                        position: customerLocation,
-
-                        draggable: true,
-
-                        onDragEnd: (newPosition) {
-
-                          setState(() {
-
-                            customerLocation =
-                                newPosition;
-                          });
-                        },
-                      ),
-                    },
-
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
-                    zoomControlsEnabled: false,
-                  ),
-                ),
+      ),
+      MarkerLayer(
+        markers: [
+          Marker(
+            point: customerLocation,
+            width: 40,
+            height: 40,
+            child: const Icon(
+              Icons.location_pin,
+              color: Colors.red,
+              size: 40,
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
               ),
 
               const SizedBox(height: 20),
@@ -820,68 +775,8 @@ children: [
               const SizedBox(height: 40),
 
               /// ENROLL
-              Container(
-                padding: const EdgeInsets.all(18),
-
-                decoration: BoxDecoration(
-                  color: const Color(0xFF111827),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-
-                child: CheckboxListTile(
-
-                  value: enrollInChitPlan,
-
-                  onChanged: (value) async {
-                    if (value == true) {
-                      final result = await showDialog(
-                        context: context,
-                        builder: (context) => const SubscriptionDialog(),
-                      );
-
-                      if (result != null && result is Map<String, dynamic>) {
-                        setState(() {
-                          enrollInChitPlan = true;
-                          selectedPlanId = result['selectedPlanId'] as int?;
-                          selectedJoinedDate = result['selectedJoinedDate'] as String?;
-                        });
-                      } else {
-                        setState(() {
-                          enrollInChitPlan = false;
-                          selectedPlanId = null;
-                          selectedJoinedDate = null;
-                        });
-                      }
-                    } else {
-                      setState(() {
-                        enrollInChitPlan = false;
-                        selectedPlanId = null;
-                        selectedJoinedDate = null;
-                      });
-                    }
-                  },
-
-                  activeColor: Colors.blue,
-
-                  title: const Text(
-                    'Enroll in Chit Plan',
-
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  subtitle: const Text(
-                    'Subscribe customer immediately',
-
-                    style: TextStyle(
-                      color: Colors.white54,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 40),
+              
+              //const SizedBox(height: 40),
 
               /// BUTTONS
               Row(

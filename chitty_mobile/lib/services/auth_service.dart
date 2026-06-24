@@ -4,14 +4,15 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-
-  // WINDOWS DESKTOP
-  static const String baseUrl =
-      'http://127.0.0.1:8000/api';
-
-  // ANDROID EMULATOR
-  // static const String baseUrl =
-  //     'http://10.0.2.2:8000/api';
+  
+  static String get baseUrl {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000/api';
+    } else {
+      return 'http://127.0.0.1:8000/api';
+    }
+  }
+  
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
 
@@ -564,5 +565,28 @@ static Future<bool> updateEmployee({
   print("UPDATE STATUS: ${response.statusCode}");
   print("UPDATE BODY: ${response.body}");
   return response.statusCode == 200;
+}
+static Future<Map<String, dynamic>> getAgentDashboard() async {
+  final prefs =
+      await SharedPreferences.getInstance();
+
+  final token =
+      prefs.getString('access_token');
+
+  final response = await http.get(
+    Uri.parse('$baseUrl/agent-dashboard/'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  print("AGENT DASHBOARD:");
+  print(response.body);
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  return {};
 }
 }
