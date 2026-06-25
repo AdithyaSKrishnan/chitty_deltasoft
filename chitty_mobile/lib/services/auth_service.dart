@@ -5,13 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   
-  static String get baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api';
-    } else {
-      return 'http://127.0.0.1:8000/api';
-    }
-  }
+  
+   static const String baseUrl =
+      'https://chittyapi.orianacare.com/api';
   
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
