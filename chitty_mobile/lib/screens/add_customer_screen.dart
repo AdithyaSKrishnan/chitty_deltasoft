@@ -565,6 +565,47 @@ buildField(
               const SizedBox(height: 20),
 
               /// GOOGLE MAP
+              /* 
+              child: GoogleMap(
+  initialCameraPosition:
+      CameraPosition(
+    target: customerLocation,
+    zoom: 14,
+  ),
+
+  onMapCreated: (controller) {
+    mapController = controller;
+  },
+
+  onTap: (LatLng position) {
+    setState(() {
+      customerLocation = position;
+    });
+  },
+
+  markers: {
+    Marker(
+      markerId:
+          const MarkerId('customer'),
+
+      position: customerLocation,
+
+      draggable: true,
+
+      onDragEnd: (newPosition) {
+        setState(() {
+          customerLocation =
+              newPosition;
+        });
+      },
+    ),
+  },
+
+  myLocationEnabled: true,
+  myLocationButtonEnabled: true,
+  zoomControlsEnabled: false,
+),
+              */
               Container(
                 height: 320,
 
