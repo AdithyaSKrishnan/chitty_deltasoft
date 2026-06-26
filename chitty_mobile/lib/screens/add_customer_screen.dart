@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../services/auth_service.dart';
-//import '../widgets/subscription_dialog.dart';
 import 'dart:io';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' as latlng;
-
-
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 class AddCustomerScreen extends StatefulWidget {
@@ -174,6 +169,8 @@ longitude: customerLocation.longitude,
 
     );
 
+    if (!mounted) return;
+
     if (created != null) {
       //final customerId = created['id'];
 
@@ -197,50 +194,68 @@ longitude: customerLocation.longitude,
     }
   }
 
-  //GoogleMapController? mapController;
+  GoogleMapController? mapController;
 
-  latlng.LatLng customerLocation =
-    const latlng.LatLng(
-  8.8932,
-  76.6141,
-);
+  LatLng customerLocation = const LatLng(
+    8.8932,
+    76.6141,
+  );
+
   Future<void> getCurrentLocation() async {
+    try {
+      final bool serviceEnabled =
+          await Geolocator.isLocationServiceEnabled();
 
-  bool serviceEnabled =
-      await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationMessage(
+          'Location is off. Tap the map to set the location manually.',
+        );
+        return;
+      }
 
-  if (!serviceEnabled) {
-    return;
-  }
+      LocationPermission permission =
+          await Geolocator.checkPermission();
 
-  LocationPermission permission =
-      await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-  if (permission == LocationPermission.denied) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showLocationMessage(
+          'Location permission denied. Tap the map to set the location manually.',
+        );
+        return;
+      }
 
-    permission =
-        await Geolocator.requestPermission();
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
 
-    if (permission == LocationPermission.denied) {
-      return;
+      if (!mounted) return;
+
+      final newLocation = LatLng(position.latitude, position.longitude);
+      setState(() {
+        customerLocation = newLocation;
+      });
+      mapController?.animateCamera(
+        CameraUpdate.newLatLng(newLocation),
+      );
+    } catch (e) {
+      _showLocationMessage(
+        'Could not get current location. Tap the map to set it manually.',
+      );
     }
   }
 
-  Position position =
-      await Geolocator.getCurrentPosition(
-    desiredAccuracy: LocationAccuracy.high,
-  );
-
-  setState(() {
-
-    customerLocation = latlng.LatLng(
-  position.latitude,
-  position.longitude,
-);
-  });
-
-  
-}
+  void _showLocationMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   Widget buildField(
   String hint, {
@@ -565,91 +580,40 @@ buildField(
               const SizedBox(height: 20),
 
               /// GOOGLE MAP
-              /* 
-              child: GoogleMap(
-  initialCameraPosition:
-      CameraPosition(
-    target: customerLocation,
-    zoom: 14,
-  ),
-
-  onMapCreated: (controller) {
-    mapController = controller;
-  },
-
-  onTap: (LatLng position) {
-    setState(() {
-      customerLocation = position;
-    });
-  },
-
-  markers: {
-    Marker(
-      markerId:
-          const MarkerId('customer'),
-
-      position: customerLocation,
-
-      draggable: true,
-
-      onDragEnd: (newPosition) {
-        setState(() {
-          customerLocation =
-              newPosition;
-        });
-      },
-    ),
-  },
-
-  myLocationEnabled: true,
-  myLocationButtonEnabled: true,
-  zoomControlsEnabled: false,
-),
-              */
-              Container(
+              SizedBox(
                 height: 320,
-
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-
                 child: ClipRRect(
-  borderRadius: BorderRadius.circular(24),
-  child: FlutterMap(
-    options: MapOptions(
-      initialCenter: customerLocation,
-      initialZoom: 14,
-      onTap: (tapPosition, point) {
-        setState(() {
-          customerLocation = point;
-        });
-      },
-    ),
-    children: [
-      TileLayer(
-        urlTemplate:
-            'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-        userAgentPackageName:
-            'com.example.chitty_mobile',
-
-      ),
-      MarkerLayer(
-        markers: [
-          Marker(
-            point: customerLocation,
-            width: 40,
-            height: 40,
-            child: const Icon(
-              Icons.location_pin,
-              color: Colors.red,
-              size: 40,
-            ),
-          ),
-        ],
-      ),
-    ],
-  ),
-),
+                  borderRadius: BorderRadius.circular(24),
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: customerLocation,
+                      zoom: 14,
+                    ),
+                    onMapCreated: (controller) {
+                      mapController = controller;
+                    },
+                    onTap: (LatLng position) {
+                      setState(() {
+                        customerLocation = position;
+                      });
+                    },
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('customer'),
+                        position: customerLocation,
+                        draggable: true,
+                        onDragEnd: (newPosition) {
+                          setState(() {
+                            customerLocation = newPosition;
+                          });
+                        },
+                      ),
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                    zoomControlsEnabled: false,
+                  ),
+                ),
               ),
 
               const SizedBox(height: 20),
