@@ -11,6 +11,7 @@ from .views import (
     EmployeeViewSet,
     HomeAddressViewSet,
     SubscriptionViewSet,
+    CurrentAddressViewSet,
     WorkAddressViewSet,
     AgentDashboardAPIView,
     reports_summary,
@@ -26,6 +27,11 @@ router = DefaultRouter()
 router.register('employees', EmployeeViewSet, basename='employee')
 router.register('customers', CustomerViewSet, basename='customer')
 router.register('home-addresses', HomeAddressViewSet, basename='home-address')
+router.register(
+    'current-addresses',
+    CurrentAddressViewSet,
+    basename='current-address',
+)
 router.register('work-addresses', WorkAddressViewSet, basename='work-address')
 router.register('chit-plans', ChitPlanViewSet, basename='chit-plan')
 router.register('subscriptions', SubscriptionViewSet, basename='subscription')

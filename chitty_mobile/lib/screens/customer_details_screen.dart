@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-//import 'edit_customer_screen.dart';
+import '../services/auth_service.dart';
+import 'edit_customer_screen.dart';
 class CustomerDetailsScreen extends StatelessWidget {
   final Map customer;
 
@@ -20,13 +21,125 @@ class CustomerDetailsScreen extends StatelessWidget {
   backgroundColor: const Color(0xFF020617),
 
   title: const Text(
-    'Customer Details TEST',
+    'Customer Details ',
     style: TextStyle(
       color: Colors.white,
     ),
   ),
 
-  
+  actions: [
+     IconButton(
+    icon: const Icon(Icons.edit),
+    onPressed: () async {
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EditCustomerScreen(
+            customer: customer,
+          ),
+        ),
+      );
+
+      if (result == true ) {
+        Navigator.pop(context, true);
+      }
+    },
+  ),
+
+    IconButton(
+      icon: const Icon(
+        Icons.delete,
+        color: Colors.red,
+      ),
+
+      onPressed: () async {
+
+  final confirm = await showDialog<bool>(
+
+    context: context,
+
+    builder: (context) {
+
+      return AlertDialog(
+
+        title: const Text("Delete Customer"),
+
+        content: const Text(
+          "Are you sure you want to delete this customer?",
+        ),
+
+        actions: [
+
+          TextButton(
+
+            onPressed: () {
+
+              Navigator.pop(context, false);
+
+            },
+
+            child: const Text("Cancel"),
+
+          ),
+
+          ElevatedButton(
+
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+
+            onPressed: () {
+
+              Navigator.pop(context, true);
+
+            },
+
+            child: const Text("Delete"),
+
+          ),
+
+        ],
+
+      );
+
+    },
+
+  );
+
+  if (confirm != true) return;
+
+  // Delete API call goes here next.
+  final success = await AuthService.deleteCustomer(
+  customer['id'],
+);
+
+if (!context.mounted) return;
+
+if (success) {
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Customer deleted successfully"),
+    ),
+  );
+
+  Navigator.pop(context, true);
+
+} else {
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Failed to delete customer"),
+    ),
+  );
+
+}
+
+},
+    ),
+
+  ],
 ),
 
       body: Padding(
@@ -108,7 +221,63 @@ class CustomerDetailsScreen extends StatelessWidget {
               customer['home_address']?['pincode'] ?? '-',
             ),
             const SizedBox(height: 20),
+const SizedBox(height: 20),
 
+const Text(
+  'Current Address',
+  style: TextStyle(
+    color: Colors.white,
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+  ),
+),
+
+const SizedBox(height: 15),
+
+buildTile(
+  'House Name',
+  customer['current_address']?['house_name'] ?? '-',
+),
+
+buildTile(
+  'Building Name',
+  customer['current_address']?['building_name'] ?? '-',
+),
+
+buildTile(
+  'Landmark',
+  customer['current_address']?['landmark'] ?? '-',
+),
+
+buildTile(
+  'Village',
+  customer['current_address']?['village'] ?? '-',
+),
+
+buildTile(
+  'Taluk',
+  customer['current_address']?['taluk'] ?? '-',
+),
+
+buildTile(
+  'District',
+  customer['current_address']?['district'] ?? '-',
+),
+
+buildTile(
+  'State',
+  customer['current_address']?['state'] ?? '-',
+),
+
+buildTile(
+  'Pincode',
+  customer['current_address']?['pincode'] ?? '-',
+),
+
+buildTile(
+  'Google Maps',
+  customer['current_address']?['google_maps_link'] ?? '-',
+),
 const Text(
   'Work Address',
   style: TextStyle(
@@ -131,13 +300,38 @@ buildTile(
 ),
 
 buildTile(
-  'Office Phone',
+  'Landmark',
+  customer['work_address']?['landmark'] ?? '-',
+),
+
+buildTile(
+  'Village',
+  customer['work_address']?['village'] ?? '-',
+),
+
+buildTile(
+  'Taluk',
+  customer['work_address']?['taluk'] ?? '-',
+),
+
+buildTile(
+  'District',
+  customer['work_address']?['district'] ?? '-',
+),
+
+buildTile(
+  'State',
+  customer['work_address']?['state'] ?? '-',
+),
+
+buildTile(
+  'Pincode',
   customer['work_address']?['pincode'] ?? '-',
 ),
 
 buildTile(
-  'Office Landmark',
-  customer['work_address']?['landmark'] ?? '-',
+  'Google Maps',
+  customer['work_address']?['google_maps_link'] ?? '-',
 ),
 const SizedBox(height: 20),
 
@@ -205,6 +399,63 @@ if (customer['id_proof'] != null)
         const SizedBox(height: 10),
         Image.network(
           customer['id_proof'],
+          height: 250,
+        ),
+        const SizedBox(height: 10),
+      ],
+    ),
+  ),
+  if (customer['home_address']?['address_photo'] != null)
+  Card(
+    color: const Color(0xFF1E293B),
+    child: Column(
+      children: [
+        const SizedBox(height: 10),
+        const Text(
+          'Home Address Proof',
+          style: TextStyle(color: Colors.white),
+        ),
+        const SizedBox(height: 10),
+        Image.network(
+          customer['home_address']['address_photo'],
+          height: 250,
+        ),
+        const SizedBox(height: 10),
+      ],
+    ),
+  ),
+  if (customer['current_address']?['address_photo'] != null)
+  Card(
+    color: const Color(0xFF1E293B),
+    child: Column(
+      children: [
+        const SizedBox(height: 10),
+        const Text(
+          'Current Address Proof',
+          style: TextStyle(color: Colors.white),
+        ),
+        const SizedBox(height: 10),
+        Image.network(
+          customer['current_address']['address_photo'],
+          height: 250,
+        ),
+        const SizedBox(height: 10),
+      ],
+    ),
+  ),
+  if (customer['work_address']?['address_photo'] != null)
+  Card(
+    color: const Color(0xFF1E293B),
+    child: Column(
+      children: [
+        const SizedBox(height: 10),
+        const Text(
+          'Work Address Proof',
+          style: TextStyle(color: Colors.white),
+        ),
+        const SizedBox(height: 10),
+        Image.network(
+          customer['work_address']['address_photo'],
           height: 250,
         ),
         const SizedBox(height: 10),

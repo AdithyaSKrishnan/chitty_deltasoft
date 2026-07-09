@@ -10,6 +10,7 @@ from .models import (
     HomeAddress,
     Subscription,
     WorkAddress,
+    CurrentAddress,
 )
 from .permissions import get_employee, is_admin
 
@@ -207,7 +208,25 @@ class HomeAddressSerializer(serializers.ModelSerializer):
     'address_photo',
         ]
 
+class CurrentAddressSerializer(serializers.ModelSerializer):
+    google_maps_link = serializers.URLField(read_only=True)
 
+    class Meta:
+        model = CurrentAddress
+        fields = [
+            'house_name',
+            'building_name',
+            'landmark',
+            'village',
+            'taluk',
+            'district',
+            'state',
+            'pincode',
+            'latitude',
+            'longitude',
+            'google_maps_link',
+            'address_photo',
+        ]
 class WorkAddressSerializer(serializers.ModelSerializer):
     google_maps_link = serializers.URLField(read_only=True)
 
@@ -239,6 +258,9 @@ class CustomerSerializer(serializers.ModelSerializer):
     home_address = HomeAddressSerializer(
         required=False,
     )
+    current_address = CurrentAddressSerializer(
+    required=False,
+)
 
     work_address = WorkAddressSerializer(
         required=False,
@@ -257,6 +279,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'created_by_name',
             'created_at',
             'home_address',
+            'current_address',
             'work_address',
             'customer_photo',
             'address_proof',
@@ -274,32 +297,55 @@ class CustomerSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
 
         home_address_data = None
+        current_address_data = None
         work_address_data = None
 
         if request:
 
             home_address_raw = request.data.get('home_address')
+            current_address_raw = request.data.get('current_address')
             work_address_raw = request.data.get('work_address')
 
             if home_address_raw:
                 home_address_data = json.loads(home_address_raw)
+            if current_address_raw:
+                current_address_data = json.loads(current_address_raw)
 
             if work_address_raw:
                 work_address_data = json.loads(work_address_raw)
 
-        customer = Customer.objects.create(**validated_data)
+            customer = Customer.objects.create(**validated_data)
 
         if home_address_data:
-            HomeAddress.objects.create(
+            home = HomeAddress.objects.create(
                 customer=customer,
                 **home_address_data,
             )
 
+            if request.FILES.get("home_address_proof"):
+                home.address_photo = request.FILES["home_address_proof"]
+                home.save()
+
+        if current_address_data:
+            print("CURRENT ADDRESS DATA:", current_address_data)
+            current = CurrentAddress.objects.create(
+                customer=customer,
+                **current_address_data,
+            )
+            print("CURRENT ADDRESS CREATED:", current.id)
+            if request.FILES.get("current_address_proof"):
+                current.address_photo = request.FILES["current_address_proof"]
+                current.save()
+
         if work_address_data:
-            WorkAddress.objects.create(
+            work = WorkAddress.objects.create(
                 customer=customer,
                 **work_address_data,
             )
+
+            if request.FILES.get("work_address_proof"):
+                work.address_photo = request.FILES["work_address_proof"]
+                work.save()
 
         return customer
 
@@ -309,6 +355,10 @@ class CustomerSerializer(serializers.ModelSerializer):
             'home_address',
             None,
         )
+        current_address_data = validated_data.pop(
+    'current_address',
+    None,
+)
 
         work_address_data = validated_data.pop(
             'work_address',
@@ -328,8 +378,23 @@ class CustomerSerializer(serializers.ModelSerializer):
 
             for attr, value in home_address_data.items():
                 setattr(home_address, attr, value)
+            if self.context['request'].FILES.get("home_address_proof"):
+               home_address.address_photo = self.context['request'].FILES["home_address_proof"]
 
             home_address.save()
+        if current_address_data:
+
+            current_address, created = CurrentAddress.objects.get_or_create(
+                    customer=instance,
+    )
+
+            for attr, value in current_address_data.items():
+                 setattr(current_address, attr, value)
+            if self.context['request'].FILES.get("current_address_proof"):
+               current_address.address_photo = self.context['request'].FILES["current_address_proof"]
+
+
+            current_address.save()
 
         if work_address_data:
 
@@ -339,6 +404,8 @@ class CustomerSerializer(serializers.ModelSerializer):
 
             for attr, value in work_address_data.items():
                 setattr(work_address, attr, value)
+            if self.context['request'].FILES.get("work_address_proof"):
+               work_address.address_photo = self.context['request'].FILES["work_address_proof"]
 
             work_address.save()
 

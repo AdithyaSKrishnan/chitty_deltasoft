@@ -20,6 +20,7 @@ from .models import (
     Employee,
     HomeAddress,
     Subscription,
+    CurrentAddress,
     WorkAddress,
 )
 from .permissions import (
@@ -41,6 +42,7 @@ from .serializers import (
     EmployeeSerializer,
     HomeAddressSerializer,
     SubscriptionSerializer,
+    CurrentAddressSerializer,
     WorkAddressSerializer,
 )
 
@@ -182,13 +184,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Customer.objects.select_related(
-            'created_by',
-            'created_by__user',
-        ).prefetch_related(
-            'home_address',
-            'work_address',
-            'subscriptions__chit_plan',
-        )
+    'created_by',
+    'created_by__user',
+    'home_address',
+    'current_address',
+    'work_address',
+).prefetch_related(
+    'subscriptions__chit_plan',
+)
 
         employee = get_employee(self.request.user)
         if not employee:
@@ -245,6 +248,38 @@ class HomeAddressViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('You can only add addresses for your own customers.')
         serializer.save()
 
+class CurrentAddressViewSet(viewsets.ModelViewSet):
+    serializer_class = CurrentAddressSerializer
+    permission_classes = employee_permissions(IsAdminOrOwnCustomerAddress)
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = [
+        'customer__customer_id',
+        'customer__full_name',
+        'village',
+        'district',
+        'pincode',
+    ]
+
+    def get_queryset(self):
+        queryset = CurrentAddress.objects.select_related('customer', 'customer__created_by')
+        employee = get_employee(self.request.user)
+        if not employee:
+            return queryset.none()
+        if not is_admin(self.request.user):
+            queryset = queryset.filter(customer__created_by=employee)
+
+        customer_id = self.request.query_params.get('customer')
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        customer = serializer.validated_data['customer']
+        employee = get_employee(self.request.user)
+        if not is_admin(self.request.user) and customer.created_by_id != employee.id:
+            raise PermissionDenied('You can only add addresses for your own customers.')
+        serializer.save()
 
 class WorkAddressViewSet(viewsets.ModelViewSet):
     serializer_class = WorkAddressSerializer

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'add_customer_screen.dart';
+//import 'add_customer_screen.dart';
 import '../services/auth_service.dart';
 import 'customer_details_screen.dart';
-import 'edit_customer_screen.dart';
-
+//import 'edit_customer_screen.dart';
+import 'add_customer/customer_form_data.dart';
+import 'add_customer/add_customer_step1.dart';
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
 
@@ -44,7 +45,7 @@ class _CustomersScreenState
     isLoading = false;
   });
 }
-  Future<void> deleteCustomer(
+  /*Future<void> deleteCustomer(
   int customerId,
 ) async {
 
@@ -67,7 +68,7 @@ class _CustomersScreenState
 
     loadCustomers();
   }
-}
+}*/
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +137,9 @@ class _CustomersScreenState
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          const AddCustomerScreen(),
+                                          AddCustomerStep1(
+                                            formData: CustomerFormData(),
+                                          ),
                                     ),
                                   );
                                   loadCustomers();
@@ -203,7 +206,9 @@ class _CustomersScreenState
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
-                                        const AddCustomerScreen(),
+                                        AddCustomerStep1(
+                                           formData: CustomerFormData(),
+                                        ),
                                   ),
                                 );
                                 loadCustomers();
@@ -309,7 +314,7 @@ class _CustomersScreenState
                     const SizedBox(height: 25),
 
                     /// TABLE
-                    SingleChildScrollView(
+                    /*SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
 
                       child: DataTable(
@@ -571,7 +576,121 @@ rows: filteredCustomers.map<DataRow>((customer)  {
 
 }).toList(),
                       ),
-                    ),
+                    ),*/
+                    Column(
+  children: [
+
+    // Header
+    Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 10,
+      ),
+      child: Row(
+        children: const [
+
+          Expanded(
+            flex: 2,
+            child: Text(
+              "Customer",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: Text(
+              "Contact",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    ),
+
+    const Divider(color: Colors.white24),
+
+    ...filteredCustomers.map((customer) {
+
+      return InkWell(
+
+        onTap: () {
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  CustomerDetailsScreen(
+                    customer: customer,
+                  ),
+            ),
+          );
+        },
+
+        child: Column(
+
+          children: [
+
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 16,
+              ),
+
+              child: Row(
+  children: [
+
+    Expanded(
+      flex: 2,
+      child: Text(
+        customer['full_name'] ?? '',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+        ),
+      ),
+    ),
+
+    Expanded(
+      child: Text(
+        customer['mobile_number'] ?? '',
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          color: Colors.white,
+        ),
+      ),
+    ),
+
+    const SizedBox(width: 8),
+
+    const Icon(
+      Icons.chevron_right,
+      color: Colors.white38,
+      size: 20,
+    ),
+
+  ],
+),
+            ),
+
+            const Divider(
+              color: Colors.white12,
+              height: 1,
+            ),
+          ],
+        ),
+      );
+
+    }).toList(),
+
+  ],
+)
                   ],
                 ),
               ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'add_customer_screen.dart';
+//import 'add_customer_screen.dart';
 import '../widgets/dashboard_card.dart';
 import '../widgets/info_container.dart';
 import '../widgets/sidebar.dart';
@@ -8,7 +8,8 @@ import 'chit_plans_screen.dart';
 import 'reports_screen.dart';
 import '../services/dashboard_service.dart';
 import '../services/auth_service.dart';
-
+import 'add_customer/add_customer_step1.dart';
+import 'add_customer/customer_form_data.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -471,7 +472,9 @@ Widget actionCard(
       'Add Customer',
       Icons.person_add,
       Colors.blue,
-      const AddCustomerScreen(),
+      AddCustomerStep1(
+  formData: CustomerFormData(),
+),
     ),
 
     actionCard(

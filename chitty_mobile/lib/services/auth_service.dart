@@ -8,6 +8,7 @@ class AuthService {
   
    static const String baseUrl =
       'https://chittyapi.orianacare.com/api';
+      //'http://10.173.97.225:8000/api';
   
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
@@ -161,25 +162,54 @@ static Future<Map<String, dynamic>?> createCustomer({
   required String alternateNumber,
   required String email,
 
-  required String houseName,
+  /*required String houseName,
   required String landmark,
   required String village,
   required String taluk,
   required String district,
   required String state,
-  required String pincode,
+  required String pincode,*/
 
-  required String companyName,
-  required String officeAddress,
-  required String officePhone,
-  required String officeLandmark,
+  // Home Address
+required String houseName,
+required String landmark,
+required String village,
+required String taluk,
+required String district,
+required String state,
+required String pincode,
+required double homeLatitude,
+required double homeLongitude,
 
-  required double latitude,
-  required double longitude,
+// Current Address
+required String currentHouseName,
+required String currentLandmark,
+required String currentVillage,
+required String currentTaluk,
+required String currentDistrict,
+required String currentState,
+required String currentPincode,
+required double currentLatitude,
+required double currentLongitude,
 
-  File? customerPhoto,
-  File? addressProof,
-  File? idProof,
+// Work Address
+required String companyName,
+required String officeAddress,
+required String workLandmark,
+required String workVillage,
+required String workTaluk,
+required String workDistrict,
+required String workState,
+required String workPincode,
+required double workLatitude,
+required double workLongitude,
+
+// Photos
+File? customerPhoto,
+File? homeAddressProof,
+File? currentAddressProof,
+File? workAddressProof,
+File? idProof,
 
 
 }) async {
@@ -206,20 +236,40 @@ request.fields['email'] = email;
 
 request.fields['home_address'] = jsonEncode({
   'house_name': houseName,
+  'building_name': '',
   'landmark': landmark,
   'village': village,
   'taluk': taluk,
   'district': district,
   'state': state,
   'pincode': pincode,
-  'latitude': latitude,
-  'longitude': longitude,
+  'latitude': homeLatitude,
+  'longitude': homeLongitude,
+});
+request.fields['current_address'] = jsonEncode({
+  'house_name': currentHouseName,
+  'building_name': '',
+  'landmark': currentLandmark,
+  'village': currentVillage,
+  'taluk': currentTaluk,
+  'district': currentDistrict,
+  'state': currentState,
+  'pincode': currentPincode,
+  'latitude': currentLatitude,
+  'longitude': currentLongitude,
 });
 
 request.fields['work_address'] = jsonEncode({
   'building_name': companyName,
   'house_name': officeAddress,
-  'landmark': officeLandmark,
+  'landmark': workLandmark,
+  'village': workVillage,
+  'taluk': workTaluk,
+  'district': workDistrict,
+  'state': workState,
+  'pincode': workPincode,
+  'latitude': workLatitude,
+  'longitude': workLongitude,
 });
 
 if (customerPhoto != null) {
@@ -231,11 +281,29 @@ if (customerPhoto != null) {
   );
 }
 
-if (addressProof != null) {
+if (homeAddressProof != null) {
   request.files.add(
     await http.MultipartFile.fromPath(
       'address_proof',
-      addressProof.path,
+      homeAddressProof.path,
+    ),
+  );
+}
+
+if (currentAddressProof != null) {
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      'current_address_proof',
+      currentAddressProof.path,
+    ),
+  );
+}
+
+if (workAddressProof != null) {
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      'work_address_proof',
+      workAddressProof.path,
     ),
   );
 }
@@ -247,6 +315,12 @@ if (idProof != null) {
       idProof.path,
     ),
   );
+}
+print("===== REQUEST DATA =====");
+print(request.fields);
+
+for (var file in request.files) {
+  print("FILE: ${file.field}");
 }
 
 final streamedResponse = await request.send();
@@ -297,17 +371,34 @@ static Future<bool> updateCustomer({
   required String alternateNumber,
   required String email,
 
-  required String houseName,
-  required String landmark,
-  required String village,
-  required String taluk,
-  required String district,
-  required String state,
-  required String pincode,
-  required String companyName,
+  // Home Address
+required String houseName,
+required String landmark,
+required String village,
+required String taluk,
+required String district,
+required String state,
+required String pincode,
+
+// Current Address
+required String currentHouseName,
+required String currentBuildingName,
+required String currentLandmark,
+required String currentVillage,
+required String currentTaluk,
+required String currentDistrict,
+required String currentState,
+required String currentPincode,
+
+// Work Address
+required String companyName,
 required String officeAddress,
-required String officePhone,
 required String officeLandmark,
+required String workVillage,
+required String workTaluk,
+required String workDistrict,
+required String workState,
+required String workPincode,
 }) async {
 
   final prefs =
@@ -357,7 +448,26 @@ required String officeLandmark,
 
         'pincode': pincode,
       },
-      'work_address': {
+      'current_address': {
+
+  'house_name': currentHouseName,
+
+  'building_name': currentBuildingName,
+
+  'landmark': currentLandmark,
+
+  'village': currentVillage,
+
+  'taluk': currentTaluk,
+
+  'district': currentDistrict,
+
+  'state': currentState,
+
+  'pincode': currentPincode,
+},
+
+'work_address': {
 
   'building_name': companyName,
 
@@ -365,7 +475,15 @@ required String officeLandmark,
 
   'landmark': officeLandmark,
 
-  'pincode': officePhone,
+  'village': workVillage,
+
+  'taluk': workTaluk,
+
+  'district': workDistrict,
+
+  'state': workState,
+
+  'pincode': workPincode,
 },
     }),
   );

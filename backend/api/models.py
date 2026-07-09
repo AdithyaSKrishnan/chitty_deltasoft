@@ -135,6 +135,23 @@ class HomeAddress(AddressMixin):
         parts = [p for p in (self.house_name, self.village, self.district) if p]
         label = ', '.join(parts) if parts else 'No address details'
         return f'Home — {self.customer.customer_id}: {label}'
+class CurrentAddress(AddressMixin):
+    customer = models.OneToOneField(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='current_address',
+    )
+
+    def __str__(self):
+        parts = [
+            p for p in (
+                self.house_name,
+                self.village,
+                self.district,
+            ) if p
+        ]
+        label = ', '.join(parts) if parts else 'No address details'
+        return f'Current — {self.customer.customer_id}: {label}'
 
 
 class WorkAddress(AddressMixin):
