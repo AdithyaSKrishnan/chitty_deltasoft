@@ -544,7 +544,9 @@ final result = await AuthService.createCustomer(
   mobileNumber: widget.formData.mobileNumber,
   alternateNumber: widget.formData.alternateNumber,
   email: widget.formData.email,
-
+  customerType: widget.formData.customerType,
+  otherCustomerType:
+      widget.formData.otherCustomerType,
   // Home Address
   houseName: widget.formData.homeHouseName,
   landmark: widget.formData.homeLandmark,

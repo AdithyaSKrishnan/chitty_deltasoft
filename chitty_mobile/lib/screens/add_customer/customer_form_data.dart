@@ -9,6 +9,8 @@ class CustomerFormData {
   String mobileNumber = '';
   String alternateNumber = '';
   String email = '';
+  String customerType = 'Customer';
+  String otherCustomerType = '';
 
   //==========================
   // HOME ADDRESS

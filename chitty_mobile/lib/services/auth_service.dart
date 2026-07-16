@@ -7,8 +7,9 @@ class AuthService {
   
   
    static const String baseUrl =
-      'https://chittyapi.orianacare.com/api';
+      //'https://chittyapi.orianacare.com/api';
       //'http://10.173.97.225:8000/api';
+      'http://10.72.160.225:8000/api';
   
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
@@ -75,6 +76,7 @@ class AuthService {
         'role',
         data['role'],
       );
+      print("ROLE = ${data['role']}");
 
       return {
         'success': true,
@@ -161,7 +163,8 @@ static Future<Map<String, dynamic>?> createCustomer({
   required String mobileNumber,
   required String alternateNumber,
   required String email,
-
+  required String customerType,
+  required String otherCustomerType,
   /*required String houseName,
   required String landmark,
   required String village,
@@ -233,6 +236,10 @@ request.fields['full_name'] = fullName;
 request.fields['mobile_number'] = mobileNumber;
 request.fields['alternate_number'] = alternateNumber;
 request.fields['email'] = email;
+request.fields['customer_type'] =
+    customerType == "Other"
+        ? otherCustomerType
+        : customerType;
 
 request.fields['home_address'] = jsonEncode({
   'house_name': houseName,
@@ -322,7 +329,7 @@ print(request.fields);
 for (var file in request.files) {
   print("FILE: ${file.field}");
 }
-
+request.fields['customer_type'] = customerType;
 final streamedResponse = await request.send();
 
 final response =
@@ -702,5 +709,23 @@ static Future<Map<String, dynamic>> getAgentDashboard() async {
   }
 
   return {};
+}
+static Future<bool> approveCustomer(int customerId) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  final token = prefs.getString('access_token');
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/customers/$customerId/approve/'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  return response.statusCode == 200;
+}
+static Future<String?> getRole() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('role');
 }
 }

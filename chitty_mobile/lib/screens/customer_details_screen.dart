@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'edit_customer_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 class CustomerDetailsScreen extends StatelessWidget {
-  final Map customer;
+   final Map customer;
 
   const CustomerDetailsScreen({
     super.key,
     required this.customer,
   });
-
   @override
   Widget build(BuildContext context) {
     print("DETAIL CUSTOMER DATA:");
-    print(customer);
+    //print(customer);
 
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
@@ -28,24 +28,76 @@ class CustomerDetailsScreen extends StatelessWidget {
   ),
 
   actions: [
-     IconButton(
-    icon: const Icon(Icons.edit),
-    onPressed: () async {
+    FutureBuilder<String?>(
+  future: AuthService.getRole(),
+  builder: (context, snapshot) {
 
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EditCustomerScreen(
-            customer: customer,
-          ),
-        ),
-      );
+    if (snapshot.data != "admin") {
+      return const SizedBox.shrink();
+    }
 
-      if (result == true ) {
-        Navigator.pop(context, true);
-      }
-    },
+    if (customer['approval_status'] == "Approved") {
+      return const SizedBox.shrink();
+    }
+
+    return IconButton(
+      icon: const Icon(
+        Icons.verified,
+        color: Colors.green,
+      ),
+      onPressed: () async {
+
+        final success =
+            await AuthService.approveCustomer(
+          customer['id'],
+        );
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Customer Approved",
+              ),
+            ),
+          );
+
+          Navigator.pop(context, true);
+        }
+      },
+    );
+  },
+),
+     FutureBuilder<String>(
+  future: SharedPreferences.getInstance().then(
+    (prefs) => prefs.getString('role') ?? '',
   ),
+  builder: (context, snapshot) {
+    final role = snapshot.data ?? '';
+
+    if (role == 'field_agent' &&
+        customer['edit_enabled'] == false) {
+      return const SizedBox.shrink();
+    }
+
+    return IconButton(
+      icon: const Icon(Icons.edit),
+      onPressed: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditCustomerScreen(
+              customer: customer,
+            ),
+          ),
+        );
+
+        if (result == true) {
+          Navigator.pop(context, true);
+        }
+      },
+    );
+  },
+),
 
     IconButton(
       icon: const Icon(
@@ -172,6 +224,21 @@ if (success) {
               'Email',
               customer['email'] ?? '-',
             ),
+            buildTile(
+  'Customer Type',
+  customer['customer_type'] ?? '-',
+),
+buildTile(
+  'Approval Status',
+  customer['approval_status'] ?? '-',
+),
+
+buildTile(
+  'Edit Status',
+  customer['edit_enabled'] == true
+      ? 'Enabled'
+      : 'Disabled',
+),
 
             buildTile(
               'Created At',

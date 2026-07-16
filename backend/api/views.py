@@ -1,5 +1,6 @@
 from datetime import timedelta
-
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.db.models import Sum, Count
 from django.utils import timezone
 from rest_framework import filters, viewsets
@@ -213,7 +214,20 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=get_employee(self.request.user))
+    
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
 
+        customer = self.get_object()
+
+        customer.approval_status = "Approved"
+        customer.edit_enabled = False
+
+        customer.save()
+
+        return Response({
+            "message": "Customer approved successfully"
+    })
 
 class HomeAddressViewSet(viewsets.ModelViewSet):
     serializer_class = HomeAddressSerializer

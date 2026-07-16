@@ -34,6 +34,8 @@ class _AddCustomerStep1State extends State<AddCustomerStep1> {
   final districtController = TextEditingController();
   final stateController = TextEditingController();
   final pincodeController = TextEditingController();
+  String selectedCustomerType = "Customer";
+  final otherCustomerTypeController = TextEditingController();
   GoogleMapController? mapController;
 
   LatLng customerLocation = const LatLng(
@@ -298,6 +300,72 @@ void initState() {
                 Column(
 
                   children: [
+                    DropdownButtonFormField<String>(
+  value: selectedCustomerType,
+  dropdownColor: const Color(0xFF111827),
+
+  decoration: InputDecoration(
+    filled: true,
+    fillColor: const Color(0xFF111827),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide.none,
+    ),
+  ),
+
+  style: const TextStyle(
+    color: Colors.white,
+  ),
+
+  items: const [
+
+    DropdownMenuItem(
+      value: "Customer",
+      child: Text("Customer"),
+    ),
+
+    DropdownMenuItem(
+      value: "Agent",
+      child: Text("Agent"),
+    ),
+
+    DropdownMenuItem(
+      value: "Guarantor",
+      child: Text("Guarantor"),
+    ),
+
+    DropdownMenuItem(
+      value: "Agent & Guarantor",
+      child: Text("Agent & Guarantor"),
+    ),
+
+    DropdownMenuItem(
+      value: "Other",
+      child: Text("Other"),
+    ),
+  ],
+
+  onChanged: (value) {
+
+    setState(() {
+
+      selectedCustomerType = value!;
+
+    });
+
+  },
+),
+
+
+const SizedBox(height: 18),
+if (selectedCustomerType == "Other") ...[
+  buildField(
+    "Specify Customer Type",
+    otherCustomerTypeController,
+  ),
+
+  const SizedBox(height: 18),
+],
 
                     buildField(
                       "Customer Name",
@@ -607,7 +675,10 @@ const SizedBox(height: 30),
   widget.formData.mobileNumber = mobileController.text;
   widget.formData.alternateNumber = alternateController.text;
   widget.formData.email = emailController.text;
+  widget.formData.customerType = selectedCustomerType;
 
+widget.formData.otherCustomerType =
+    otherCustomerTypeController.text;
   // Home Address
   widget.formData.homeHouseName = houseController.text;
   widget.formData.homeLandmark = landmarkController.text;

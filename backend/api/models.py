@@ -53,6 +53,18 @@ class Customer(models.Model):
     mobile_number = models.CharField(max_length=15)
     alternate_number = models.CharField(max_length=15, blank=True)
     email = models.EmailField(blank=True)
+    customer_type = models.CharField(
+    max_length=100,
+    default="Customer",
+)
+    approval_status = models.CharField(
+    max_length=20,
+    default="Pending",
+)
+
+    edit_enabled = models.BooleanField(
+    default=True,
+)
     created_by = models.ForeignKey(
         Employee,
         on_delete=models.PROTECT,
