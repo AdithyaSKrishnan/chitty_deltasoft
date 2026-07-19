@@ -2,13 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
 
-// Layouts
 import AdminLayout from './components/layout/AdminLayout';
 import AgentLayout from './components/layout/AgentLayout';
 
-// Pages
 import LoginPage from './pages/LoginPage';
-// Admin Pages
 import Dashboard from './pages/admin/Dashboard';
 import CustomersPage from './pages/admin/CustomersPage';
 import CustomerFormPage from './pages/admin/CustomerFormPage';
@@ -18,39 +15,33 @@ import SubscriptionsPage from './pages/admin/SubscriptionsPage';
 import EmployeesPage from './pages/admin/EmployeesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
-// Agent Pages
+
 import MyCustomersPage from './pages/agent/MyCustomersPage';
 import AddCustomerPage from './pages/agent/AddCustomerPage';
 import EnrollPage from './pages/agent/EnrollPage';
 import AgentCustomerDetailPage from './pages/agent/CustomerDetailPage';
+import SubadminLoginPage from './pages/SubadminLoginPage';
+import EditCustomerPage from './pages/agent/EditCustomerPage';
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900">
       <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
 
-function ProtectedRoute({
-  children,
-  role,
-}: {
-  children: React.ReactNode;
-  role?: 'admin' | 'agent';
-}) {
+function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 'admin' | 'agent' }) {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  // Map subadmin into the administrative environment mapping layout
+  const normalizedRole = (user?.role === 'admin' || user?.role === 'subadmin') ? 'admin' : 'agent';
 
-  if (role && user?.role !== role) {
-    return <Navigate to={user?.role === 'admin' ? '/admin' : '/agent'} replace />;
+  if (role && normalizedRole !== role) {
+    return <Navigate to={normalizedRole === 'admin' ? '/admin' : '/agent'} replace />;
   }
 
   return <>{children}</>;
@@ -58,34 +49,23 @@ function ProtectedRoute({
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
+  if (isLoading) return <LoadingScreen />;
   if (isAuthenticated && user) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/agent'} replace />;
+    const defaultPath = (user.role === 'admin' || user.role === 'subadmin') ? '/admin' : '/agent';
+    return <Navigate to={defaultPath} replace />;
   }
-
   return <>{children}</>;
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+      <Route path="/subadmin-login" element={<GuestRoute><SubadminLoginPage /></GuestRoute>} />
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute role="admin">
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
+      {/* Admin and Subadmin Route Matrices */}
+      <Route path="/admin" element={<ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="customers/add" element={<CustomerFormPage />} />
@@ -100,22 +80,15 @@ function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Agent Routes */}
-      <Route
-        path="/agent"
-        element={
-          <ProtectedRoute role="agent">
-            <AgentLayout />
-          </ProtectedRoute>
-        }
-      >
+      {/* Agent Route Matrices */}
+      <Route path="/agent" element={<ProtectedRoute role="agent"><AgentLayout /></ProtectedRoute>}>
         <Route index element={<MyCustomersPage />} />
         <Route path="customer/:id" element={<AgentCustomerDetailPage />} />
+        <Route path="customer/edit/:id" element={<EditCustomerPage />} />
         <Route path="add-customer" element={<AddCustomerPage />} />
         <Route path="enroll" element={<EnrollPage />} />
       </Route>
 
-      {/* Catch all - redirect to login */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

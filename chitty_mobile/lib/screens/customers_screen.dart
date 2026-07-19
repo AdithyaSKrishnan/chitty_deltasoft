@@ -620,9 +620,8 @@ rows: filteredCustomers.map<DataRow>((customer)  {
 
       return InkWell(
 
-        onTap: () {
-
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) =>
@@ -631,6 +630,9 @@ rows: filteredCustomers.map<DataRow>((customer)  {
                   ),
             ),
           );
+          if (result == true) {
+            loadCustomers();
+          }
         },
 
         child: Column(
@@ -648,12 +650,24 @@ rows: filteredCustomers.map<DataRow>((customer)  {
 
     Expanded(
       flex: 2,
-      child: Text(
-        customer['full_name'] ?? '',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            customer['full_name'] ?? '',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+          if (customer['is_edit_unlocked'] == true) ...[
+            const SizedBox(width: 6),
+            const Text(
+              "🔓",
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
+        ],
       ),
     ),
 

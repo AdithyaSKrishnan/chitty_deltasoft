@@ -159,6 +159,7 @@ Widget actionCard(
 }
   Widget customerTile(
     String name,
+    String? photoUrl,
     String id,
     String amount,
   ) {
@@ -173,11 +174,15 @@ Widget actionCard(
 
           CircleAvatar(
             backgroundColor: Colors.blue,
-
-            child: Text(
-              name[0],
-              style: const TextStyle(color: Colors.white),
-            ),
+            backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                ? NetworkImage(photoUrl)
+                : null,
+            child: (photoUrl == null || photoUrl.isEmpty)
+                ? Text(
+                    name.split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join(),
+                    style: const TextStyle(color: Colors.white),
+                  )
+                : null,
           ),
 
           const SizedBox(width: 14),
@@ -218,8 +223,11 @@ Widget actionCard(
   }
 
   Widget subscriptionTile(
-    String plan,
+    String customerName,
+    String? photoUrl,
+    String planName,
     String amount,
+    String paymentStatus,
   ) {
 
     return Container(
@@ -232,31 +240,60 @@ Widget actionCard(
 
           CircleAvatar(
             backgroundColor: Colors.purple,
-
-            child: Text(
-              plan[0],
-              style: const TextStyle(color: Colors.white),
-            ),
+            backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                ? NetworkImage(photoUrl)
+                : null,
+            child: (photoUrl == null || photoUrl.isEmpty)
+                ? Text(
+                    customerName.split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join(),
+                    style: const TextStyle(color: Colors.white),
+                  )
+                : null,
           ),
 
           const SizedBox(width: 14),
 
           Expanded(
-            child: Text(
-              plan,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  customerName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  planName,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          Text(
-            amount,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                amount,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                paymentStatus,
+                style: TextStyle(
+                  color: paymentStatus.toLowerCase() == 'paid' ? Colors.green : Colors.orange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -515,8 +552,9 @@ Widget actionCard(
                                 child: Column(
   children: recentCustomers.map<Widget>((customer) {
     return customerTile(
-      customer['full_name'],
-      customer['customer_id'],
+      customer['full_name'] ?? '',
+      customer['customer_photo'],
+      customer['customer_id'] ?? '',
       '',
     );
   }).toList(),
@@ -532,8 +570,11 @@ Widget actionCard(
   children: recentSubscriptions.map<Widget>((subscription) {
 
     return subscriptionTile(
-      subscription['chit_plan_name'],
+      subscription['customer_name'] ?? '',
+      subscription['customer_photo'],
+      subscription['chit_plan_name'] ?? '',
       '₹${subscription['monthly_payment']}',
+      subscription['payment_status'] ?? '',
     );
 
   }).toList(),
@@ -558,8 +599,9 @@ Widget actionCard(
                                   child: Column(
   children: recentCustomers.map<Widget>((customer) {
     return customerTile(
-      customer['full_name'],
-      customer['customer_id'],
+      customer['full_name'] ?? '',
+      customer['customer_photo'],
+      customer['customer_id'] ?? '',
       '',
     );
   }).toList(),
@@ -580,8 +622,11 @@ Widget actionCard(
   children: recentSubscriptions.map<Widget>((subscription) {
 
     return subscriptionTile(
-      subscription['chit_plan_name'],
+      subscription['customer_name'] ?? '',
+      subscription['customer_photo'],
+      subscription['chit_plan_name'] ?? '',
       '₹${subscription['monthly_payment']}',
+      subscription['payment_status'] ?? '',
     );
 
   }).toList(),

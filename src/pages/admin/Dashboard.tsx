@@ -16,11 +16,17 @@ import {
   fetchDashboardRecentSubscriptions,
   fetchDashboardStats,
   mapApiError,
+  fetchCustomerEditRequests,
+  approveCustomerEditRequest,
+  rejectCustomerEditRequest,
+  fetchCustomers,
+  approveCustomer,
 } from '../../services/api';
 import type {
   DashboardRecentCustomer,
   DashboardRecentSubscription,
   DashboardStats,
+  Customer,
 } from '../../types';
 
 function formatMonthlyCollection(amount: number): string {
@@ -45,12 +51,23 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentCustomers, setRecentCustomers] = useState<DashboardRecentCustomer[]>([]);
   const [recentSubscriptions, setRecentSubscriptions] = useState<DashboardRecentSubscription[]>([]);
+  const [editRequests, setEditRequests] = useState<any[]>([]);
+  const [resolvingIds, setResolvingIds] = useState<string[]>([]);
+  
+  const [pendingConfirmations, setPendingConfirmations] = useState<Customer[]>([]);
+  const [isLoadingConfirmations, setIsLoadingConfirmations] = useState(true);
+  const [confirmationsError, setConfirmationsError] = useState('');
+  const [confirmingIds, setConfirmingIds] = useState<string[]>([]);
+  
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
+  
   const [statsError, setStatsError] = useState('');
   const [customersError, setCustomersError] = useState('');
   const [subscriptionsError, setSubscriptionsError] = useState('');
+  const [requestsError, setRequestsError] = useState('');
 
   const loadStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -91,11 +108,81 @@ export default function Dashboard() {
     }
   }, []);
 
+  const loadEditRequests = useCallback(async () => {
+    setIsLoadingRequests(true);
+    setRequestsError('');
+    try {
+      const data = await fetchCustomerEditRequests({ status: 'Pending' });
+      setEditRequests(data);
+    } catch (err) {
+      setRequestsError(mapApiError(err));
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  }, []);
+
+  const handleApproveRequest = async (id: string) => {
+    if (resolvingIds.includes(id)) return;
+    setResolvingIds((prev) => [...prev, id]);
+    try {
+      await approveCustomerEditRequest(id);
+      setEditRequests((prev) => prev.filter((r) => r.id !== id));
+      loadRecentCustomers(); // Reload customer list to reflect status updates
+    } catch (err) {
+      alert(mapApiError(err));
+    } finally {
+      setResolvingIds((prev) => prev.filter((x) => x !== id));
+    }
+  };
+
+  const handleRejectRequest = async (id: string) => {
+    if (resolvingIds.includes(id)) return;
+    setResolvingIds((prev) => [...prev, id]);
+    try {
+      await rejectCustomerEditRequest(id);
+      setEditRequests((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      alert(mapApiError(err));
+    } finally {
+      setResolvingIds((prev) => prev.filter((x) => x !== id));
+    }
+  };
+
+  const loadConfirmations = useCallback(async () => {
+    setIsLoadingConfirmations(true);
+    setConfirmationsError('');
+    try {
+      const data = await fetchCustomers({ approval_status: 'Pending' });
+      setPendingConfirmations(data.filter((c: any) => c.isEditUnlocked));
+    } catch (err) {
+      setConfirmationsError(mapApiError(err));
+    } finally {
+      setIsLoadingConfirmations(false);
+    }
+  }, []);
+
+  const handleConfirmChanges = async (customerId: string) => {
+    if (confirmingIds.includes(customerId)) return;
+    setConfirmingIds((prev) => [...prev, customerId]);
+    try {
+      await approveCustomer(customerId);
+      setPendingConfirmations((prev) => prev.filter((c) => c.id !== customerId));
+      loadRecentCustomers();
+      loadStats();
+    } catch (err) {
+      alert(mapApiError(err));
+    } finally {
+      setConfirmingIds((prev) => prev.filter((x) => x !== customerId));
+    }
+  };
+
   useEffect(() => {
     loadStats();
     loadRecentCustomers();
     loadRecentSubscriptions();
-  }, [loadStats, loadRecentCustomers, loadRecentSubscriptions]);
+    loadEditRequests();
+    loadConfirmations();
+  }, [loadStats, loadRecentCustomers, loadRecentSubscriptions, loadEditRequests, loadConfirmations]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -116,16 +203,14 @@ export default function Dashboard() {
               {statsError}
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-              <StatCard
-                title="Total Customers"
-                value={stats ? stats.totalCustomers.toLocaleString() : '—'}
-                subtitle="All time"
-                icon={<Users className="w-6 h-6" />}
-                color="primary"
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StatCard
+              title="Total Customers"
+              value={stats ? stats.totalCustomers.toLocaleString() : '—'}
+              subtitle="All time"
+              icon={<Users className="w-6 h-6" />}
+              color="primary"
+            />
             <StatCard
               title="Active Chitties"
               value={stats ? stats.activeChitties.toLocaleString() : '—'}
@@ -222,6 +307,122 @@ export default function Dashboard() {
         </div>
       </Card>
 
+      {/* Pending Edit Requests */}
+      {editRequests.length > 0 && (
+        <Card className="border-warning-500/20 bg-warning-50/5 dark:bg-warning-950/5">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-warning-500 animate-pulse" />
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
+              Pending Edit Requests ({editRequests.length})
+            </h2>
+          </div>
+          {requestsError && (
+            <div className="mb-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              {requestsError}
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {editRequests.map((req) => (
+              <div
+                key={req.id}
+                className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 shadow-sm flex flex-col justify-between gap-3"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2 mb-1">
+                    <p className="font-semibold text-slate-800 dark:text-white truncate max-w-[70%]">
+                      {req.customer_name} ({req.customer_code})
+                    </p>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      {new Date(req.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    Requested by: <span className="font-medium text-slate-700 dark:text-slate-300">{req.requested_by_name}</span>
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/30 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                    "{req.reason}"
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-end mt-1">
+                  <button
+                    disabled={resolvingIds.includes(req.id)}
+                    onClick={() => handleRejectRequest(req.id)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border border-red-200 dark:border-red-900/50 disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    disabled={resolvingIds.includes(req.id)}
+                    onClick={() => handleApproveRequest(req.id)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
+                  >
+                    {resolvingIds.includes(req.id) ? 'Processing...' : 'Approve & Unlock'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Edits Pending Confirmation */}
+      {pendingConfirmations.length > 0 && (
+        <Card className="border-success-500/20 bg-success-50/5 dark:bg-success-950/5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-success-500 animate-pulse" />
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
+              Edits Pending Confirmation ({pendingConfirmations.length})
+            </h2>
+          </div>
+          {confirmationsError && (
+            <div className="mb-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              {confirmationsError}
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingConfirmations.map((customer) => (
+              <div
+                key={customer.id}
+                className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 shadow-sm flex flex-col justify-between gap-3"
+              >
+                <div>
+                  <div className="flex justify-between items-start gap-2 mb-1">
+                    <p className="font-semibold text-slate-800 dark:text-white truncate max-w-[70%]">
+                      {customer.name} ({customer.customerId})
+                    </p>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      {new Date(customer.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    Onboarded by: <span className="font-medium text-slate-700 dark:text-slate-300">{customer.createdByName || 'Agent'}</span>
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Primary Contact: <span className="font-medium text-slate-700 dark:text-slate-300">{customer.primaryMobile}</span>
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-end mt-1">
+                  <Link
+                    to={`/admin/customers/${customer.id}`}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border border-slate-200 dark:border-slate-700"
+                  >
+                    View Details
+                  </Link>
+                  <button
+                    disabled={confirmingIds.includes(customer.id)}
+                    onClick={() => handleConfirmChanges(customer.id)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50"
+                  >
+                    {confirmingIds.includes(customer.id) ? 'Confirming...' : 'Confirm Changes'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+
       {/* Recent sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Customers */}
@@ -257,9 +458,9 @@ export default function Dashboard() {
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
+                    src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
                     alt={customer.name}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-800 dark:text-white truncate">
@@ -307,9 +508,11 @@ export default function Dashboard() {
                   key={sub.id}
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-500 flex items-center justify-center text-white font-semibold">
-                    {sub.customerName.charAt(0)}
-                  </div>
+                  <img
+                    src={sub.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.customerName)}&background=3b82f6&color=fff`}
+                    alt={sub.customerName}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-800 dark:text-white truncate">
                       {sub.customerName}

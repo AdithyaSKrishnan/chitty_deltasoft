@@ -148,9 +148,9 @@ export default function EnrollPage() {
                     className="sr-only"
                   />
                   <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=3b82f6&color=fff`}
+                    src={c.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=3b82f6&color=fff`}
                     alt={c.name}
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                   <div className="flex-1">
                     <p className="font-medium text-slate-800 dark:text-white">{c.name}</p>
@@ -186,9 +186,9 @@ export default function EnrollPage() {
           {customer && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
               <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
+                src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
                 alt={customer.name}
-                className="w-8 h-8 rounded-full"
+                className="w-8 h-8 rounded-full object-cover"
               />
               <div className="flex-1">
                 <p className="text-sm font-medium text-slate-800 dark:text-white">{customer.name}</p>

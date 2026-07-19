@@ -26,9 +26,12 @@ export function StatusBadge({ status }: { status: string }) {
     pending: { variant: 'warning', label: 'Pending' },
     paid: { variant: 'success', label: 'Paid' },
     overdue: { variant: 'danger', label: 'Overdue' },
+    approved: { variant: 'success', label: 'Approved' },
+    rejected: { variant: 'danger', label: 'Rejected' },
   };
 
-  const config = statusMap[status] || { variant: 'default', label: status };
+  const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+  const config = statusMap[status] || { variant: 'default', label: capitalize(status) };
 
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }

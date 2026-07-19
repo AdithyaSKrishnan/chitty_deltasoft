@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'agent';
+export type UserRole = 'admin' | 'subadmin' | 'agent';
 
 export interface User {
   id: string;
@@ -42,11 +42,17 @@ export interface Customer {
   alternateMobile?: string;
   email: string;
   homeAddress: Address;
+  currentAddress?: Address;
   workAddress?: Address;
+  customerPhoto?: string;
   photos: CustomerPhoto[];
   createdBy: string;
+  createdByName?: string;
   createdAt: string;
   updatedAt: string;
+  approvalStatus: string;
+  editEnabled: boolean;
+  isEditUnlocked?: boolean;
 }
 
 export interface ChitPlan {
@@ -64,6 +70,7 @@ export interface Subscription {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhoto?: string;
   chitPlanId: string;
   chitPlanName: string;
   joinedDate: string;

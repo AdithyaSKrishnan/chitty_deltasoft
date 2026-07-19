@@ -11,6 +11,9 @@ import {
   fetchCustomer,
   mapApiError,
   updateCustomer,
+  uploadCustomerPhotos,
+  fetchSubscriptions,
+  createSubscription,
 } from '../../services/api';
 import { ChitPlan } from '../../types';
 
@@ -74,6 +77,7 @@ export default function CustomerFormPage() {
     joinedDate: new Date().toISOString().split('T')[0],
   });
 
+  const [existingChitPlanId, setExistingChitPlanId] = useState('');
   const [addWorkAddress, setAddWorkAddress] = useState(false);
   const [enrollInPlan, setEnrollInPlan] = useState(false);
 
@@ -87,19 +91,45 @@ export default function CustomerFormPage() {
     if (!isEdit || !id) return;
 
     setIsLoading(true);
-    fetchCustomer(id)
-      .then((data) => {
+    Promise.all([
+      fetchCustomer(id),
+      fetchSubscriptions({ customer: id }),
+    ])
+      .then(([data, subs]) => {
         setGeneratedId(data.customerId);
         setCustomer({
           name: data.name,
           primaryMobile: data.primaryMobile,
           alternateMobile: data.alternateMobile || '',
-          email: data.email,
+          email: data.email || '',
         });
-        setHomeAddress({ ...data.homeAddress, type: 'home' });
+
+        if (data.homeAddress) {
+          setHomeAddress({ ...data.homeAddress, type: 'home' });
+        }
         if (data.workAddress) {
           setWorkAddress({ ...data.workAddress, type: 'work' });
           setAddWorkAddress(true);
+        }
+
+        const customerPhoto = data.photos.find((p: any) => p.type === 'customer')?.url || '';
+        const addressProof = data.photos.find((p: any) => p.type === 'addressProof')?.url || '';
+        const idProof = data.photos.find((p: any) => p.type === 'idProof')?.url || '';
+        const workLocation = data.photos.find((p: any) => p.type === 'workLocation')?.url || '';
+        setPhotos({
+          customer: customerPhoto,
+          addressProof: addressProof,
+          idProof: idProof,
+          workLocation: workLocation,
+        });
+
+        if (subs.length > 0) {
+          setSubscription({
+            chitPlanId: subs[0].chitPlanId,
+            joinedDate: subs[0].joinedDate || new Date().toISOString().split('T')[0],
+          });
+          setEnrollInPlan(true);
+          setExistingChitPlanId(subs[0].chitPlanId);
         }
       })
       .catch((err) => setError(mapApiError(err)))
@@ -111,7 +141,20 @@ export default function CustomerFormPage() {
     setIsSaving(true);
     try {
       if (isEdit && id) {
-        await updateCustomer(id, customer);
+        await updateCustomer(id, {
+          ...customer,
+          homeAddress,
+          workAddress: addWorkAddress ? workAddress : null,
+        });
+        await uploadCustomerPhotos(id, photos);
+        
+        if (enrollInPlan && subscription.chitPlanId && subscription.chitPlanId !== existingChitPlanId) {
+          await createSubscription({
+            customerId: id,
+            chitPlanId: subscription.chitPlanId,
+            joinedDate: subscription.joinedDate,
+          });
+        }
       } else {
         await createCustomerWithDetails({
           customer,
@@ -198,118 +241,114 @@ export default function CustomerFormPage() {
         </div>
       </Card>
 
-      {!isEdit && (
-        <>
-          <Card>
-            <AddressForm
-              type="home"
-              data={homeAddress}
-              onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
-            />
-          </Card>
+      <Card>
+        <AddressForm
+          type="home"
+          data={homeAddress}
+          onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
+        />
+      </Card>
 
-          <Card>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={addWorkAddress}
-                onChange={(e) => setAddWorkAddress(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <div>
-                <p className="font-medium text-slate-800 dark:text-white">Add Work Address</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Include customer's workplace location
-                </p>
-              </div>
-            </label>
-          </Card>
+      <Card>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={addWorkAddress}
+            onChange={(e) => setAddWorkAddress(e.target.checked)}
+            className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+          />
+          <div>
+            <p className="font-medium text-slate-800 dark:text-white">Add Work Address</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Include customer's workplace location
+            </p>
+          </div>
+        </label>
+      </Card>
 
-          {addWorkAddress && (
-            <Card>
-              <AddressForm
-                type="work"
-                data={workAddress}
-                onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
-              />
-            </Card>
-          )}
-
-          <Card>
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
-              Photo Uploads
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PhotoUpload
-                type="customer"
-                label="Customer Photo"
-                value={photos.customer}
-                onChange={(url) => setPhotos({ ...photos, customer: url })}
-              />
-              <PhotoUpload
-                type="address_proof"
-                label="Address Proof"
-                value={photos.addressProof}
-                onChange={(url) => setPhotos({ ...photos, addressProof: url })}
-              />
-              <PhotoUpload
-                type="id_proof"
-                label="ID Proof"
-                value={photos.idProof}
-                onChange={(url) => setPhotos({ ...photos, idProof: url })}
-              />
-              {addWorkAddress && (
-                <PhotoUpload
-                  type="work_location"
-                  label="Work Location Photo"
-                  value={photos.workLocation}
-                  onChange={(url) => setPhotos({ ...photos, workLocation: url })}
-                />
-              )}
-            </div>
-          </Card>
-
-          <Card>
-            <label className="flex items-center gap-3 cursor-pointer mb-4">
-              <input
-                type="checkbox"
-                checked={enrollInPlan}
-                onChange={(e) => setEnrollInPlan(e.target.checked)}
-                className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <div>
-                <p className="font-medium text-slate-800 dark:text-white">Enroll in Chit Plan</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Subscribe customer to a chit plan immediately
-                </p>
-              </div>
-            </label>
-
-            {enrollInPlan && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                <Select
-                  label="Select Chit Plan"
-                  value={subscription.chitPlanId}
-                  onChange={(e) => setSubscription({ ...subscription, chitPlanId: e.target.value })}
-                  options={[
-                    { value: '', label: 'Choose a plan...' },
-                    ...chitPlans.map((p) => ({
-                      value: p.id,
-                      label: `${p.planName} - ₹${p.monthlyPayment}/month`,
-                    })),
-                  ]}
-                />
-                <Input
-                  label="Joined Date"
-                  type="date"
-                  value={subscription.joinedDate}
-                  onChange={(e) => setSubscription({ ...subscription, joinedDate: e.target.value })}
-                />
-              </div>
-            )}
-          </Card>
-        </>
+      {addWorkAddress && (
+        <Card>
+          <AddressForm
+            type="work"
+            data={workAddress}
+            onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
+          />
+        </Card>
       )}
+
+      <Card>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
+          Photo Uploads
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <PhotoUpload
+            type="customer"
+            label="Customer Photo"
+            value={photos.customer}
+            onChange={(url) => setPhotos({ ...photos, customer: url })}
+          />
+          <PhotoUpload
+            type="address_proof"
+            label="Address Proof"
+            value={photos.addressProof}
+            onChange={(url) => setPhotos({ ...photos, addressProof: url })}
+          />
+          <PhotoUpload
+            type="id_proof"
+            label="ID Proof"
+            value={photos.idProof}
+            onChange={(url) => setPhotos({ ...photos, idProof: url })}
+          />
+          {addWorkAddress && (
+            <PhotoUpload
+              type="work_location"
+              label="Work Location Photo"
+              value={photos.workLocation}
+              onChange={(url) => setPhotos({ ...photos, workLocation: url })}
+            />
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <label className="flex items-center gap-3 cursor-pointer mb-4">
+          <input
+            type="checkbox"
+            checked={enrollInPlan}
+            onChange={(e) => setEnrollInPlan(e.target.checked)}
+            className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+          />
+          <div>
+            <p className="font-medium text-slate-800 dark:text-white">Enroll in Chit Plan</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Subscribe customer to a chit plan immediately
+            </p>
+          </div>
+        </label>
+
+        {enrollInPlan && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+            <Select
+              label="Select Chit Plan"
+              value={subscription.chitPlanId}
+              onChange={(e) => setSubscription({ ...subscription, chitPlanId: e.target.value })}
+              options={[
+                { value: '', label: 'Choose a plan...' },
+                ...chitPlans.map((p) => ({
+                  value: p.id,
+                  label: `${p.planName} - ₹${p.monthlyPayment}/month`,
+                })),
+              ]}
+            />
+            <Input
+              label="Joined Date"
+              type="date"
+              value={subscription.joinedDate}
+              onChange={(e) => setSubscription({ ...subscription, joinedDate: e.target.value })}
+            />
+          </div>
+        )}
+      </Card>
 
       <div className="flex justify-end gap-3">
         <Button variant="secondary" onClick={() => navigate('/admin/customers')}>

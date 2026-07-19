@@ -4,8 +4,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Form';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Customer, Subscription } from '../../types';
-import { fetchCustomer, fetchSubscriptions, mapApiError } from '../../services/api';
-import { ArrowLeft, Phone, Mail, MapPin, Navigation, CreditCard } from 'lucide-react';
+import { fetchCustomer, fetchSubscriptions, mapApiError, fetchCustomerEditRequests, createCustomerEditRequest } from '../../services/api';
+import { ArrowLeft, Phone, Mail, MapPin, Navigation, CreditCard, Unlock, Calendar, Clock } from 'lucide-react';
 
 export default function AgentCustomerDetailPage() {
   const { id } = useParams();
@@ -14,6 +14,10 @@ export default function AgentCustomerDetailPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -21,14 +25,31 @@ export default function AgentCustomerDetailPage() {
     Promise.all([
       fetchCustomer(id),
       fetchSubscriptions({ customer: id }),
+      fetchCustomerEditRequests({ customer: id, status: 'Pending' }),
     ])
-      .then(([customerData, subscriptionData]) => {
+      .then(([customerData, subscriptionData, editRequests]) => {
         setCustomer(customerData);
         setSubscriptions(subscriptionData);
+        setHasPendingRequest(editRequests.length > 0);
       })
       .catch((err) => setError(mapApiError(err)))
       .finally(() => setIsLoading(false));
   }, [id]);
+
+  const handleRequestEdit = async () => {
+    if (!id) return;
+    setIsSubmittingRequest(true);
+    setError('');
+    try {
+      await createCustomerEditRequest({ customerId: id, reason: 'Profile modification request' });
+      setHasPendingRequest(true);
+      setShowSuccessModal(true);
+    } catch (err) {
+      setError(mapApiError(err));
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -62,15 +83,46 @@ export default function AgentCustomerDetailPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-lg font-bold text-slate-800 dark:text-white">Customer Details</h1>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-white">Customer Details</h1>
+        </div>
+        {customer.approvalStatus !== 'Approved' || customer.editEnabled ? (
+          <Button
+            variant="secondary"
+            onClick={() => navigate(`/agent/customer/edit/${customer.id}`)}
+          >
+            Edit
+          </Button>
+        ) : hasPendingRequest ? (
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-warning-50 dark:bg-warning-900/20 text-warning-600 dark:text-warning-400">
+            Edit Request Pending
+          </span>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={handleRequestEdit}
+            isLoading={isSubmittingRequest}
+          >
+            Request Edit
+          </Button>
+        )}
       </div>
+
+      {customer.isEditUnlocked && (
+        <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-500/20 text-green-800 dark:text-white text-sm flex items-center gap-3">
+          <Unlock className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+          <span>
+            <strong>Edit Permission Granted!</strong> Admin has unlocked this customer profile. You can now edit and update the details.
+          </span>
+        </div>
+      )}
 
       {/* Profile Card */}
       <Card className="p-4 text-center">
@@ -80,7 +132,10 @@ export default function AgentCustomerDetailPage() {
           className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
         />
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">{customer.name}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">{customer.customerId}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{customer.customerId}</p>
+        <div className="flex justify-center">
+          <StatusBadge status={customer.approvalStatus ? customer.approvalStatus.toLowerCase() : 'pending'} />
+        </div>
       </Card>
 
       {/* Contact Info */}
@@ -116,6 +171,35 @@ export default function AgentCustomerDetailPage() {
             </div>
             <span className="text-sm">{customer.email}</span>
           </a>
+        </div>
+      </Card>
+
+      {/* Profile History */}
+      <Card className="p-4">
+        <h3 className="font-semibold text-slate-800 dark:text-white mb-3">Profile History</h3>
+        <div className="space-y-3 text-sm">
+          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-slate-500" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Date Added</p>
+              <p className="font-medium text-slate-750 dark:text-slate-200">
+                {new Date(customer.createdAt).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-slate-500" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Last Modified</p>
+              <p className="font-medium text-slate-750 dark:text-slate-200">
+                {new Date(customer.updatedAt).toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -174,17 +258,32 @@ export default function AgentCustomerDetailPage() {
       {/* Photos */}
       <Card className="p-4">
         <h3 className="font-semibold text-slate-800 dark:text-white mb-3">Documents</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {customer.photos.map((photo, index) => (
-            <div key={index} className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700">
-              <img
-                src={photo.url}
-                alt={photo.type}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
+        {customer.photos && customer.photos.length > 0 ? (
+          <div className="grid grid-cols-3 gap-4">
+            {customer.photos.map((photo, index) => (
+              <div key={index} className="space-y-1">
+                <div className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-800">
+                  <img
+                    src={photo.url}
+                    alt={photo.type}
+                    className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                    onClick={() => window.open(photo.url, '_blank')}
+                  />
+                </div>
+                <p className="text-[11px] font-medium text-center text-slate-500 dark:text-slate-400">
+                  {photo.type === 'customer' && 'Customer Photo'}
+                  {photo.type === 'addressProof' && 'Address Proof'}
+                  {photo.type === 'idProof' && 'ID Proof'}
+                  {photo.type === 'homeAddressProof' && 'Home Address Proof'}
+                  {photo.type === 'currentAddressProof' && 'Current Address Proof'}
+                  {photo.type === 'workAddressProof' && 'Work Address Proof'}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">No documents uploaded</p>
+        )}
       </Card>
 
       {/* Subscriptions */}
@@ -212,6 +311,31 @@ export default function AgentCustomerDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* Request Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-success-50 dark:bg-success-950/20 text-success-500 flex items-center justify-center mx-auto">
+              <span className="text-xl">✉️</span>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+              Request Submitted
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Your edit permission request has been successfully sent to the administrators and sub-administrators. Please wait for authorization.
+            </p>
+            <div className="pt-2">
+              <Button
+                className="w-full"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Okay
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

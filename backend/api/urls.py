@@ -18,6 +18,7 @@ from .views import (
     monthly_collections,
     plan_distribution,
     payment_overview,
+    CustomerEditRequestViewSet,
 )
 
     
@@ -35,6 +36,7 @@ router.register(
 router.register('work-addresses', WorkAddressViewSet, basename='work-address')
 router.register('chit-plans', ChitPlanViewSet, basename='chit-plan')
 router.register('subscriptions', SubscriptionViewSet, basename='subscription')
+router.register('customer-edit-requests', CustomerEditRequestViewSet, basename='customer-edit-request')
 
 urlpatterns = [
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

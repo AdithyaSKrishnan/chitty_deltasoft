@@ -4,6 +4,7 @@ import { Table, Pagination, SearchBar } from '../../components/ui/Table';
 import { Card, PageHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Form';
 import { Customer } from '../../types';
+import { StatusBadge } from '../../components/ui/Badge';
 import { Plus, Eye, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { deleteCustomer, fetchCustomers, mapApiError } from '../../services/api';
@@ -67,12 +68,13 @@ export default function CustomersPage() {
     {
       key: 'name',
       header: 'Customer',
+      className: 'w-[280px] min-w-[240px]',
       render: (customer: Customer) => (
         <div className="flex items-center gap-3">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
+            src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
             alt={customer.name}
-            className="w-10 h-10 rounded-full"
+            className="w-10 h-10 rounded-full object-cover"
           />
           <div>
             <p className="font-medium text-slate-800 dark:text-white">{customer.name}</p>
@@ -84,6 +86,7 @@ export default function CustomersPage() {
     {
       key: 'primaryMobile',
       header: 'Contact',
+      className: 'w-[180px] min-w-[150px]',
       render: (customer: Customer) => (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
@@ -102,6 +105,7 @@ export default function CustomersPage() {
     {
       key: 'email',
       header: 'Email',
+      className: 'w-[220px] min-w-[180px]',
       render: (customer: Customer) => (
         <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
           <Mail className="w-4 h-4" />
@@ -112,6 +116,7 @@ export default function CustomersPage() {
     {
       key: 'address',
       header: 'Location',
+      className: 'w-[200px] min-w-[160px]',
       render: (customer: Customer) => (
         <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
           <MapPin className="w-4 h-4" />
@@ -122,8 +127,17 @@ export default function CustomersPage() {
       ),
     },
     {
+      key: 'approvalStatus',
+      header: 'Approval Status',
+      className: 'w-[160px] min-w-[130px]',
+      render: (customer: Customer) => (
+        <StatusBadge status={customer.approvalStatus ? customer.approvalStatus.toLowerCase() : 'pending'} />
+      ),
+    },
+    {
       key: 'actions',
       header: 'Actions',
+      className: 'w-[120px] min-w-[100px] text-right',
       render: (customer: Customer) => (
         <div className="flex items-center gap-1">
           <button

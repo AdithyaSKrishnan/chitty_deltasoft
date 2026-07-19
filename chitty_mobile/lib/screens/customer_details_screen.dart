@@ -2,203 +2,294 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'edit_customer_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-class CustomerDetailsScreen extends StatelessWidget {
+class CustomerDetailsScreen extends StatefulWidget {
    final Map customer;
 
   const CustomerDetailsScreen({
     super.key,
     required this.customer,
   });
+
+  @override
+  State<CustomerDetailsScreen> createState() => _CustomerDetailsScreenState();
+}
+
+class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
+  String _role = '';
+  bool _hasPendingRequest = false;
+  bool _isLoadingPendingRequest = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final role = await AuthService.getRole() ?? '';
+    setState(() {
+      _role = role;
+    });
+
+    if (role == 'field_agent') {
+      final hasPending = await AuthService.hasPendingEditRequest(widget.customer['id']);
+      setState(() {
+        _hasPendingRequest = hasPending;
+        _isLoadingPendingRequest = false;
+      });
+    } else {
+      setState(() {
+        _isLoadingPendingRequest = false;
+      });
+    }
+  }
+
+  Future<void> _submitRequestEdit() async {
+    setState(() {
+      _isLoadingPendingRequest = true;
+    });
+
+    final success = await AuthService.createEditRequest(
+      widget.customer['id'],
+      "Profile modification request",
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingPendingRequest = false;
+    });
+
+    if (success) {
+      setState(() {
+        _hasPendingRequest = true;
+      });
+
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text("Request Submitted", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: const Text(
+            "Your edit permission request has been successfully sent to the administrators and sub-administrators. Please wait for authorization.",
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Okay"),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to submit request")),
+      );
+    }
+  }
+
+  String formatDateTime(dynamic val) {
+    if (val == null) return '-';
+    try {
+      final dt = DateTime.parse(val.toString()).toLocal();
+      final year = dt.year;
+      final month = dt.month.toString().padLeft(2, '0');
+      final day = dt.day.toString().padLeft(2, '0');
+      final hourVal = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final hour = hourVal.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+      return "$year-$month-$day $hour:$minute $ampm";
+    } catch (e) {
+      return val.toString();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final customer = widget.customer;
     print("DETAIL CUSTOMER DATA:");
-    //print(customer);
 
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
 
       appBar: AppBar(
-  backgroundColor: const Color(0xFF020617),
+        backgroundColor: const Color(0xFF020617),
 
-  title: const Text(
-    'Customer Details ',
-    style: TextStyle(
-      color: Colors.white,
-    ),
-  ),
-
-  actions: [
-    FutureBuilder<String?>(
-  future: AuthService.getRole(),
-  builder: (context, snapshot) {
-
-    if (snapshot.data != "admin") {
-      return const SizedBox.shrink();
-    }
-
-    if (customer['approval_status'] == "Approved") {
-      return const SizedBox.shrink();
-    }
-
-    return IconButton(
-      icon: const Icon(
-        Icons.verified,
-        color: Colors.green,
-      ),
-      onPressed: () async {
-
-        final success =
-            await AuthService.approveCustomer(
-          customer['id'],
-        );
-
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Customer Approved",
-              ),
-            ),
-          );
-
-          Navigator.pop(context, true);
-        }
-      },
-    );
-  },
-),
-     FutureBuilder<String>(
-  future: SharedPreferences.getInstance().then(
-    (prefs) => prefs.getString('role') ?? '',
-  ),
-  builder: (context, snapshot) {
-    final role = snapshot.data ?? '';
-
-    if (role == 'field_agent' &&
-        customer['edit_enabled'] == false) {
-      return const SizedBox.shrink();
-    }
-
-    return IconButton(
-      icon: const Icon(Icons.edit),
-      onPressed: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EditCustomerScreen(
-              customer: customer,
-            ),
+        title: const Text(
+          'Customer Details ',
+          style: TextStyle(
+            color: Colors.white,
           ),
-        );
-
-        if (result == true) {
-          Navigator.pop(context, true);
-        }
-      },
-    );
-  },
-),
-
-    IconButton(
-      icon: const Icon(
-        Icons.delete,
-        color: Colors.red,
-      ),
-
-      onPressed: () async {
-
-  final confirm = await showDialog<bool>(
-
-    context: context,
-
-    builder: (context) {
-
-      return AlertDialog(
-
-        title: const Text("Delete Customer"),
-
-        content: const Text(
-          "Are you sure you want to delete this customer?",
         ),
 
         actions: [
+          if ((_role == 'admin' || _role == 'subadmin') && customer['approval_status'] != 'Approved')
+            IconButton(
+              icon: const Icon(
+                Icons.verified,
+                color: Colors.green,
+              ),
+              onPressed: () async {
+                final success = await AuthService.approveCustomer(
+                  customer['id'],
+                );
 
-          TextButton(
+                if (success) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Customer Approved",
+                      ),
+                    ),
+                  );
 
-            onPressed: () {
-
-              Navigator.pop(context, false);
-
-            },
-
-            child: const Text("Cancel"),
-
-          ),
-
-          ElevatedButton(
-
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+                  Navigator.pop(context, true);
+                }
+              },
             ),
+          if (_role == 'field_agent') ...[
+            if (customer['edit_enabled'] == true)
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditCustomerScreen(
+                        customer: customer,
+                      ),
+                    ),
+                  );
 
-            onPressed: () {
+                  if (result == true) {
+                    if (!mounted) return;
+                    Navigator.pop(context, true);
+                  }
+                },
+              )
+            else if (!_isLoadingPendingRequest) ...[
+              if (_hasPendingRequest)
+                IconButton(
+                  icon: const Icon(Icons.hourglass_empty, color: Colors.amber),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Edit request is pending approval by admin."),
+                      ),
+                    );
+                  },
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.edit_off, color: Colors.blue),
+                  onPressed: _submitRequestEdit,
+                ),
+            ],
+          ],
+          IconButton(
+            icon: const Icon(
+              Icons.delete,
+              color: Colors.red,
+            ),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Delete Customer"),
+                    content: const Text(
+                      "Are you sure you want to delete this customer?",
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        child: const Text("Cancel"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        child: const Text("Delete"),
+                      ),
+                    ],
+                  );
+                },
+              );
 
-              Navigator.pop(context, true);
+              if (confirm != true) return;
 
+              final success = await AuthService.deleteCustomer(
+                customer['id'],
+              );
+
+              if (!mounted) return;
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Customer deleted successfully"),
+                  ),
+                );
+
+                Navigator.pop(context, true);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Failed to delete customer"),
+                  ),
+                );
+              }
             },
-
-            child: const Text("Delete"),
-
           ),
-
         ],
-
-      );
-
-    },
-
-  );
-
-  if (confirm != true) return;
-
-  // Delete API call goes here next.
-  final success = await AuthService.deleteCustomer(
-  customer['id'],
-);
-
-if (!context.mounted) return;
-
-if (success) {
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("Customer deleted successfully"),
-    ),
-  );
-
-  Navigator.pop(context, true);
-
-} else {
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("Failed to delete customer"),
-    ),
-  );
-
-}
-
-},
-    ),
-
-  ],
-),
+      ),
 
       body: Padding(
         padding: const EdgeInsets.all(20),
 
         child: ListView(
           children: [
+            if (customer['is_edit_unlocked'] == true) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15803D).withOpacity(0.15),
+                  border: Border.all(color: const Color(0xFF15803D).withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.lock_open, color: Color(0xFF4ADE80), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: RichText(
+                        text: const TextSpan(
+                          style: TextStyle(color: Color(0xFF4ADE80), fontSize: 13),
+                          children: [
+                            TextSpan(
+                              text: "Edit Permission Granted! ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            TextSpan(
+                              text: "Admin has unlocked this customer profile. You can now edit and update the details.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             buildTile(
               'Customer ID',
@@ -241,8 +332,13 @@ buildTile(
 ),
 
             buildTile(
-              'Created At',
-              customer['created_at'] ?? '-',
+              'Date Added',
+              formatDateTime(customer['created_at']),
+            ),
+
+            buildTile(
+              'Last Modified',
+              formatDateTime(customer['updated_at'] ?? customer['created_at']),
             ),
 
             const SizedBox(height: 20),
@@ -560,4 +656,4 @@ if (customer['id_proof'] != null)
       ),
     );
   }
-}
+}

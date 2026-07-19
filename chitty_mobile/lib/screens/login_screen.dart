@@ -49,7 +49,7 @@ class _LoginScreenState
       final role = result['role'];
 
       // ADMIN LOGIN
-      if (role == 'admin') {
+      if (role == 'admin' || role == 'subadmin') {
 
         Navigator.pushReplacement(
 

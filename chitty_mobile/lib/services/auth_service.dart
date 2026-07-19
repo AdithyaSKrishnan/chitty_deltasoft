@@ -9,7 +9,7 @@ class AuthService {
    static const String baseUrl =
       //'https://chittyapi.orianacare.com/api';
       //'http://10.173.97.225:8000/api';
-      'http://10.72.160.225:8000/api';
+      'http://192.168.1.166:8000/api';
   
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
@@ -727,5 +727,47 @@ static Future<bool> approveCustomer(int customerId) async {
 static Future<String?> getRole() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString('role');
+}
+
+static Future<bool> hasPendingEditRequest(int customerId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/customer-edit-requests/?customer=$customerId&status=Pending'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.isNotEmpty;
+    }
+  } catch (e) {
+    print("Error checking edit request: $e");
+  }
+  return false;
+}
+
+static Future<bool> createEditRequest(int customerId, String reason) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/customer-edit-requests/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'customer': customerId,
+        'reason': reason,
+      }),
+    );
+    return response.statusCode == 201;
+  } catch (e) {
+    print("Error creating edit request: $e");
+  }
+  return false;
 }
 }

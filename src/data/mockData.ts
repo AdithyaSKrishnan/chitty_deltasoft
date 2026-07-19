@@ -106,6 +106,8 @@ export const mockCustomers: Customer[] = [
     createdBy: 'agent_1',
     createdAt: '2024-03-15',
     updatedAt: '2024-03-15',
+    approvalStatus: 'Approved',
+    editEnabled: false,
   },
   {
     id: '2',
@@ -134,6 +136,8 @@ export const mockCustomers: Customer[] = [
     createdBy: 'agent_2',
     createdAt: '2024-03-18',
     updatedAt: '2024-03-18',
+    approvalStatus: 'Approved',
+    editEnabled: false,
   },
   {
     id: '3',
@@ -176,6 +180,8 @@ export const mockCustomers: Customer[] = [
     createdBy: 'agent_1',
     createdAt: '2024-03-20',
     updatedAt: '2024-03-20',
+    approvalStatus: 'Approved',
+    editEnabled: false,
   },
 ];
 

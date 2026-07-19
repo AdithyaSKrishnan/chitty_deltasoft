@@ -73,16 +73,27 @@ export default function MyCustomersPage() {
               >
                 <div className="flex items-start gap-3">
                   <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
+                    src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
                     alt={customer.name}
-                    className="w-12 h-12 rounded-full"
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-slate-800 dark:text-white">
-                          {customer.name}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-slate-800 dark:text-white">
+                            {customer.name}
+                          </h3>
+                          {customer.isEditUnlocked ? (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-success-50 dark:bg-success-900/20 text-success-600 dark:text-success-400 flex items-center gap-0.5">
+                              🔓 Unlocked
+                            </span>
+                          ) : customer.approvalStatus === 'Pending' ? (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-warning-50 dark:bg-warning-900/20 text-warning-600 dark:text-warning-400">
+                              Pending
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {customer.customerId}
                         </p>

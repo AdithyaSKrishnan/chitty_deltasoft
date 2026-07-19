@@ -44,7 +44,9 @@ export function clearAuthData() {
 }
 
 export function mapBackendRole(role) {
-  return role === 'admin' ? 'admin' : 'agent';
+  if (role === 'admin') return 'admin';
+  if (role === 'subadmin') return 'subadmin';
+  return 'agent';
 }
 
 export function mapApiError(error) {
@@ -131,6 +133,26 @@ export function mapAddressFromApi(address, type) {
 }
 
 export function mapCustomerFromApi(customer) {
+  const photos = [];
+  if (customer.customer_photo) {
+    photos.push({ type: 'customer', url: customer.customer_photo });
+  }
+  if (customer.address_proof) {
+    photos.push({ type: 'addressProof', url: customer.address_proof });
+  }
+  if (customer.id_proof) {
+    photos.push({ type: 'idProof', url: customer.id_proof });
+  }
+  if (customer.home_address?.address_photo) {
+    photos.push({ type: 'homeAddressProof', url: customer.home_address.address_photo });
+  }
+  if (customer.current_address?.address_photo) {
+    photos.push({ type: 'currentAddressProof', url: customer.current_address.address_photo });
+  }
+  if (customer.work_address?.address_photo) {
+    photos.push({ type: 'workAddressProof', url: customer.work_address.address_photo });
+  }
+
   return {
     id: String(customer.id),
     customerId: customer.customer_id,
@@ -139,13 +161,21 @@ export function mapCustomerFromApi(customer) {
     alternateMobile: customer.alternate_number || '',
     email: customer.email || '',
     homeAddress: mapAddressFromApi(customer.home_address, 'home'),
+    currentAddress: customer.current_address
+      ? mapAddressFromApi(customer.current_address, 'current')
+      : undefined,
     workAddress: customer.work_address
       ? mapAddressFromApi(customer.work_address, 'work')
       : undefined,
-    photos: [],
+    customerPhoto: customer.customer_photo || undefined,
+    photos,
     createdBy: String(customer.created_by),
+    createdByName: customer.created_by_name || 'Agent',
     createdAt: customer.created_at,
-    updatedAt: customer.created_at,
+    updatedAt: customer.updated_at || customer.created_at,
+    approvalStatus: customer.approval_status || 'Pending',
+    editEnabled: customer.edit_enabled ?? true,
+    isEditUnlocked: customer.is_edit_unlocked ?? false,
   };
 }
 
@@ -172,6 +202,7 @@ export function mapSubscriptionFromApi(subscription) {
     id: String(subscription.id),
     customerId: String(subscription.customer),
     customerName: subscription.customer_name || subscription.customer_id_display || '',
+    customerPhoto: subscription.customer_photo || undefined,
     chitPlanId: String(subscription.chit_plan),
     chitPlanName: subscription.chit_plan_name || subscription.chit_plan_code || '',
     joinedDate: subscription.joined_date,
@@ -346,6 +377,11 @@ export async function fetchCustomer(id) {
   return mapCustomerFromApi(response.data);
 }
 
+export async function approveCustomer(id) {
+  const response = await api.post(`customers/${id}/approve/`);
+  return response.data;
+}
+
 export async function createCustomerWithDetails({
   customer,
   homeAddress,
@@ -380,6 +416,10 @@ export async function createCustomerWithDetails({
     );
   }
 
+  if (photos.customer || photos.addressProof || photos.idProof) {
+    await uploadCustomerPhotos(createdCustomer.id, photos);
+  }
+
   if (subscription?.chitPlanId) {
     await api.post('subscriptions/', {
       customer: createdCustomer.id,
@@ -393,13 +433,58 @@ export async function createCustomerWithDetails({
   );
 }
 
+export async function uploadCustomerPhotos(id, photos) {
+  const formData = new FormData();
+  let hasPhotos = false;
+
+  if (photos.customer && photos.customer.startsWith('data:')) {
+    const file = dataUrlToFile(photos.customer, 'customer.jpg');
+    if (file) {
+      formData.append('customer_photo', file);
+      hasPhotos = true;
+    }
+  }
+  if (photos.addressProof && photos.addressProof.startsWith('data:')) {
+    const file = dataUrlToFile(photos.addressProof, 'address_proof.jpg');
+    if (file) {
+      formData.append('address_proof', file);
+      hasPhotos = true;
+    }
+  }
+  if (photos.idProof && photos.idProof.startsWith('data:')) {
+    const file = dataUrlToFile(photos.idProof, 'id_proof.jpg');
+    if (file) {
+      formData.append('id_proof', file);
+      hasPhotos = true;
+    }
+  }
+
+  if (hasPhotos) {
+    await api.patch(`customers/${id}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  }
+}
+
 export async function updateCustomer(id, customer) {
-  const response = await api.patch(`customers/${id}/`, {
+  const payload = {
     full_name: customer.name,
     mobile_number: customer.primaryMobile,
     alternate_number: customer.alternateMobile || '',
     email: customer.email || '',
-  });
+  };
+
+  if (customer.homeAddress) {
+    payload.home_address = mapAddressToApi(customer.homeAddress, 'home');
+  }
+  if (customer.currentAddress) {
+    payload.current_address = mapAddressToApi(customer.currentAddress, 'current');
+  }
+  if (customer.workAddress) {
+    payload.work_address = mapAddressToApi(customer.workAddress, 'work');
+  }
+
+  const response = await api.patch(`customers/${id}/`, payload);
   return mapCustomerFromApi(response.data);
 }
 
@@ -469,6 +554,7 @@ export function mapDashboardRecentCustomerFromApi(customer) {
     id: String(customer.id),
     customerId: customer.customer_id,
     name: customer.full_name,
+    customerPhoto: customer.customer_photo || undefined,
     createdAt: customer.created_at,
   };
 }
@@ -483,6 +569,7 @@ export function mapDashboardRecentSubscriptionFromApi(subscription) {
   return {
     id: String(subscription.id),
     customerName: subscription.customer_name,
+    customerPhoto: subscription.customer_photo || undefined,
     chitPlanName: subscription.chit_plan_name,
     monthlyPayment: Number(subscription.monthly_payment),
     paymentStatus: subscription.payment_status,
@@ -502,6 +589,78 @@ export async function createSubscription({ customerId, chitPlanId, joinedDate })
     joined_date: joinedDate,
   });
   return mapSubscriptionFromApi(response.data);
+}
+
+export function mapEmployeeFromApi(emp) {
+  return {
+    id: String(emp.id),
+    employeeId: emp.employee_id,
+    userId: String(emp.id),
+    username: emp.username_display || '',
+    name: emp.full_name_display || '',
+    email: emp.email_display || '',
+    phone: emp.phone_number || '',
+    role: mapBackendRole(emp.role),
+    isActive: emp.is_active ?? true,
+    customersCount: emp.customer_count ?? 0,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export async function fetchEmployees(params = {}) {
+  const response = await api.get('employees/', { params });
+  const items = Array.isArray(response.data) ? response.data : response.data.results || [];
+  return items.map(mapEmployeeFromApi);
+}
+
+export async function createEmployee(data) {
+  const response = await api.post('employees/', {
+    full_name: data.name,
+    username: data.username,
+    email: data.email,
+    password: data.password,
+    phone_number: data.phone,
+    role: data.role === 'agent' ? 'field_agent' : data.role,
+  });
+  return mapEmployeeFromApi(response.data);
+}
+
+export async function updateEmployee(id, data) {
+  const response = await api.patch(`employees/${id}/`, {
+    full_name: data.name,
+    email: data.email,
+    phone_number: data.phone,
+    role: data.role === 'agent' ? 'field_agent' : data.role,
+  });
+  return mapEmployeeFromApi(response.data);
+}
+
+export async function toggleEmployeeStatus(id) {
+  const response = await api.post(`employees/${id}/toggle_status/`);
+  return response.data;
+}
+
+export async function fetchCustomerEditRequests(params = {}) {
+  const response = await api.get('customer-edit-requests/', { params });
+  return Array.isArray(response.data) ? response.data : response.data.results || [];
+}
+
+export async function createCustomerEditRequest(data) {
+  const response = await api.post('customer-edit-requests/', {
+    customer: Number(data.customerId),
+    reason: data.reason,
+  });
+  return response.data;
+}
+
+export async function approveCustomerEditRequest(id) {
+  const response = await api.post(`customer-edit-requests/${id}/approve/`);
+  return response.data;
+}
+
+export async function rejectCustomerEditRequest(id) {
+  const response = await api.post(`customer-edit-requests/${id}/reject/`);
+  return response.data;
 }
 
 export default api;
