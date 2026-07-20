@@ -365,18 +365,20 @@ class _AgentDashboardScreenState
                       children: [
 
                         statsCard(
-  'Total Customers',
-  totalCustomers.toString(),
-  Icons.people,
-  Colors.blue,
-),
+                          'Total Customers',
+                          totalCustomers.toString(),
+                          Icons.people,
+                          Colors.blue,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen())),
+                        ),
 
-statsCard(
-  'Active Subscriptions',
-  activeSubscriptions.toString(),
-  Icons.subscriptions,
-  Colors.green,
-),
+                        statsCard(
+                          'Active Subscriptions',
+                          activeSubscriptions.toString(),
+                          Icons.subscriptions,
+                          Colors.green,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentSubscriptionsScreen())),
+                        ),
                         
                       ],
                     ),
@@ -510,21 +512,25 @@ statsCard(
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? onTap,
+  }) {
 
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
 
-      padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
 
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
 
-        borderRadius:
-            BorderRadius.circular(24),
-      ),
+          borderRadius:
+              BorderRadius.circular(24),
+        ),
 
-      child: Row(
+        child: Row(
 
         children: [
 
@@ -583,6 +589,7 @@ statsCard(
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -388,39 +388,58 @@ rows: filteredCustomers.map<DataRow>((customer)  {
     cells: [
 
       DataCell(
-  Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisAlignment: MainAxisAlignment.center,
+  Row(
     children: [
-
-      Text(
-        customer['full_name'] ?? '',
-        style: const TextStyle(
-          color: Colors.white,
-        ),
+      CircleAvatar(
+        radius: 18,
+        backgroundColor: Colors.blue,
+        backgroundImage: (customer['customer_photo'] != null && (customer['customer_photo'] as String).isNotEmpty)
+            ? NetworkImage(customer['customer_photo'])
+            : null,
+        child: (customer['customer_photo'] == null || (customer['customer_photo'] as String).isEmpty)
+            ? Text(
+                (customer['full_name'] ?? '').toString().split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join(),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              )
+            : null,
       ),
+      const SizedBox(width: 10),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
 
-      const SizedBox(height: 4),
-
-      Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 2,
-        ),
-        decoration: BoxDecoration(
-          color: customer['kyc_status'] == 'Completed'
-              ? Colors.green
-              : Colors.orange,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          customer['kyc_status'] ?? 'Pending',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
+          Text(
+            customer['full_name'] ?? '',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
+
+          const SizedBox(height: 4),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: customer['kyc_status'] == 'Completed'
+                  ? Colors.green
+                  : Colors.orange,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              customer['kyc_status'] ?? 'Pending',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     ],
   ),
