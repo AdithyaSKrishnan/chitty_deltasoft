@@ -26,4 +26,5 @@ __pycache__/
 .venv/
 *.sqlite3
 backend/media/
+backend/staticfiles/
 
