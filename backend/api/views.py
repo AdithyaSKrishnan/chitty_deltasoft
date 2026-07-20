@@ -66,15 +66,18 @@ class DashboardStatsAPIView(APIView):
 
         customers_qs = _scoped_customers_queryset(request.user)
         subscriptions_qs = _scoped_subscriptions_queryset(request.user)
-        active_subscriptions_qs = subscriptions_qs.filter(subscription_status=Subscription.SubscriptionStatus.ACTIVE)
+        active_subscriptions_qs = subscriptions_qs.filter(
+            subscription_status=Subscription.SubscriptionStatus.ACTIVE,
+            customer__approval_status='Approved'
+        )
 
         monthly_collections = active_subscriptions_qs.aggregate(total=Sum('chit_plan__monthly_payment'))['total'] or 0
         pending_payments = subscriptions_qs.filter(payment_status__in=[Subscription.PaymentStatus.PENDING, Subscription.PaymentStatus.OVERDUE]).count()
         seven_days_ago = timezone.now() - timedelta(days=7)
-        recent_onboardings = customers_qs.filter(created_at__gte=seven_days_ago).count()
+        recent_onboardings = customers_qs.filter(approval_status='Approved', created_at__gte=seven_days_ago).count()
 
         return Response({
-            'total_customers': customers_qs.count(),
+            'total_customers': customers_qs.filter(approval_status='Approved').count(),
             'active_subscriptions': active_subscriptions_qs.count(),
             'monthly_collections_total': float(monthly_collections),
             'pending_payments': pending_payments,
@@ -95,7 +98,7 @@ class DashboardRecentSubscriptionsAPIView(APIView):
 
     def get(self, request):
         subscriptions = (_scoped_subscriptions_queryset(request.user)
-                         .filter(subscription_status=Subscription.SubscriptionStatus.ACTIVE)
+                         .filter(subscription_status=Subscription.SubscriptionStatus.ACTIVE, customer__approval_status='Approved')
                          .select_related('customer', 'chit_plan')
                          .order_by('-joined_date')[:5])
         serializer = DashboardRecentSubscriptionSerializer(subscriptions, many=True, context={'request': request})
@@ -268,6 +271,7 @@ class AgentDashboardAPIView(APIView):
         subscriptions = Subscription.objects.filter(
             customer__created_by=employee,
             subscription_status='active',
+            customer__approval_status='Approved',
         )
         recent_customers = customers.filter(approval_status='Approved').order_by('-created_at')[:5]
 
