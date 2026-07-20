@@ -439,16 +439,18 @@ Widget actionCard(
 
                       children: [
                         DashboardCard(
-  title: 'Total Customers',
-  value: '${stats?['total_customers'] ?? 0}',
-  icon: Icons.people,
-  color: Colors.blue,
-),
+                          title: 'Total Customers',
+                          value: '${stats?['total_customers'] ?? 0}',
+                          icon: Icons.people,
+                          color: Colors.blue,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen())),
+                        ),
                         DashboardCard(
                           title: 'Active Chitties',
                           value: '${stats?['active_subscriptions'] ?? 0}',
                           icon: Icons.account_balance_wallet,
                           color: Colors.green,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsScreen())),
                         ),
 
                         DashboardCard(
@@ -456,6 +458,7 @@ Widget actionCard(
                           value: '₹${stats?['monthly_collections_total'] ?? 0}',
                           icon: Icons.currency_rupee,
                           color: Colors.lightBlueAccent,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
                         ),
 
                         DashboardCard(
@@ -463,6 +466,7 @@ Widget actionCard(
                           value: '${stats?['pending_payments'] ?? 0}',
                           icon: Icons.access_time,
                           color: Colors.orange,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsScreen())),
                         ),
 
                         DashboardCard(
@@ -470,6 +474,7 @@ Widget actionCard(
                           value: '${stats?['active_chit_plans'] ?? 0}',
                           icon: Icons.description,
                           color: Colors.lightGreen,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChitPlansScreen())),
                         ),
 
                         DashboardCard(
@@ -477,6 +482,7 @@ Widget actionCard(
                           value: '12',
                           icon: Icons.bar_chart,
                           color: Colors.purple,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
                         ),
                       ],
                     ),

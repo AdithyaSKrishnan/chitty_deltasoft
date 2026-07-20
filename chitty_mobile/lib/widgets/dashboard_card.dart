@@ -6,6 +6,7 @@ class DashboardCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   const DashboardCard({
     super.key,
@@ -13,30 +14,34 @@ class DashboardCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
 
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
 
-      padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
 
-      decoration: BoxDecoration(
+        decoration: BoxDecoration(
 
-        borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24),
 
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.08),
-            Colors.white.withOpacity(0.03),
-          ],
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.08),
+              Colors.white.withOpacity(0.03),
+            ],
+          ),
+
+          border: Border.all(
+            color: Colors.white10,
+          ),
         ),
-
-        border: Border.all(
-          color: Colors.white10,
-        ),
-      ),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,6 +91,7 @@ class DashboardCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

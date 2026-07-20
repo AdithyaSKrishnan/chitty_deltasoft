@@ -210,6 +210,7 @@ export default function Dashboard() {
               subtitle="All time"
               icon={<Users className="w-6 h-6" />}
               color="primary"
+              to="/admin/customers"
             />
             <StatCard
               title="Active Chitties"
@@ -217,6 +218,7 @@ export default function Dashboard() {
               subtitle="Currently running"
               icon={<CreditCard className="w-6 h-6" />}
               color="accent"
+              to="/admin/subscriptions"
             />
             <StatCard
               title="Monthly Collection"
@@ -224,6 +226,7 @@ export default function Dashboard() {
               subtitle="Expected this month"
               icon={<IndianRupee className="w-6 h-6" />}
               color="primary"
+              to="/admin/reports"
             />
             <StatCard
               title="Pending Payments"
@@ -231,6 +234,7 @@ export default function Dashboard() {
               subtitle="Requires attention"
               icon={<Clock className="w-6 h-6" />}
               color="warning"
+              to="/admin/subscriptions"
             />
             <StatCard
               title="Active Plans"
@@ -238,6 +242,7 @@ export default function Dashboard() {
               subtitle="Chit plans available"
               icon={<FileText className="w-6 h-6" />}
               color="accent"
+              to="/admin/plans"
             />
             <StatCard
               title="Recent Onboardings"
@@ -245,6 +250,7 @@ export default function Dashboard() {
               subtitle="Last 7 days"
               icon={<UserPlus className="w-6 h-6" />}
               color="primary"
+              to="/admin/customers"
             />
           </div>
         </>

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 interface CardProps {
   children: ReactNode;
@@ -24,9 +25,11 @@ interface StatCardProps {
   icon: ReactNode;
   trend?: { value: number; isPositive: boolean };
   color?: 'primary' | 'accent' | 'warning' | 'danger';
+  to?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ title, value, subtitle, icon, trend, color = 'primary' }: StatCardProps) {
+export function StatCard({ title, value, subtitle, icon, trend, color = 'primary', to, onClick }: StatCardProps) {
   const colorClasses = {
     primary: 'from-primary-400 to-primary-500 shadow-primary-500/25',
     accent: 'from-accent-400 to-accent-500 shadow-accent-500/25',
@@ -34,8 +37,8 @@ export function StatCard({ title, value, subtitle, icon, trend, color = 'primary
     danger: 'from-red-400 to-red-500 shadow-red-500/25',
   };
 
-  return (
-    <div className="stat-card">
+  const cardContent = (
+    <div className={`stat-card transition-all duration-200 ${to || onClick ? 'hover:scale-[1.02] cursor-pointer hover:shadow-lg' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
@@ -72,6 +75,16 @@ export function StatCard({ title, value, subtitle, icon, trend, color = 'primary
       </div>
     </div>
   );
+
+  if (to) {
+    return <Link to={to} className="block">{cardContent}</Link>;
+  }
+
+  if (onClick) {
+    return <div onClick={onClick}>{cardContent}</div>;
+  }
+
+  return cardContent;
 }
 
 interface PageHeaderProps {
