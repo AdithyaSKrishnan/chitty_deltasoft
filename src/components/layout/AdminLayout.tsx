@@ -122,7 +122,7 @@ export default function AdminLayout() {
                 <item.icon className="w-5 h-5 shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {item.label === 'Customers' && pendingCount > 0 && (
-                  <span className="ml-auto flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold rounded-full bg-red-500 text-white shadow-md shadow-red-500/40 animate-pulse">
+                  <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-semibold rounded-full bg-red-500 text-white">
                     {pendingCount}
                   </span>
                 )}
