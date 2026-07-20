@@ -86,7 +86,7 @@ class DashboardRecentCustomersAPIView(APIView):
     permission_classes = employee_permissions(IsAdminOrFieldAgent)
 
     def get(self, request):
-        customers = _scoped_customers_queryset(request.user).order_by('-created_at')[:5]
+        customers = _scoped_customers_queryset(request.user).filter(approval_status='Approved').order_by('-created_at')[:5]
         serializer = DashboardRecentCustomerSerializer(customers, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -269,7 +269,7 @@ class AgentDashboardAPIView(APIView):
             customer__created_by=employee,
             subscription_status='active',
         )
-        recent_customers = customers.order_by('-created_at')[:5]
+        recent_customers = customers.filter(approval_status='Approved').order_by('-created_at')[:5]
 
         recent_data = []
         for customer in recent_customers:
