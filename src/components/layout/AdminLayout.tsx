@@ -15,7 +15,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchCustomers, fetchCustomerEditRequests } from '../../services/api';
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -32,6 +33,32 @@ export default function AdminLayout() {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadPendingCount = async () => {
+      try {
+        const [pendingCustomers, editRequests] = await Promise.all([
+          fetchCustomers({ approval_status: 'Pending' }),
+          fetchCustomerEditRequests({ status: 'Pending' }),
+        ]);
+        if (isMounted) {
+          const count = (pendingCustomers?.length || 0) + (editRequests?.length || 0);
+          setPendingCount(count);
+        }
+      } catch (err) {
+        console.error('Error fetching pending requests count:', err);
+      }
+    };
+
+    loadPendingCount();
+    const interval = setInterval(loadPendingCount, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -88,12 +115,17 @@ export default function AdminLayout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `nav-item ${isActive ? 'nav-item-active' : ''}`
+                  `nav-item flex items-center gap-3 ${isActive ? 'nav-item-active' : ''}`
                 }
                 onClick={() => setSidebarOpen(false)}
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <item.icon className="w-5 h-5 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {item.label === 'Customers' && pendingCount > 0 && (
+                  <span className="ml-auto flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold rounded-full bg-red-500 text-white shadow-md shadow-red-500/40 animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
