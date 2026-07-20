@@ -22,6 +22,20 @@ interface AddressFormProps {
   compact?: boolean;
 }
 
+function parseCoordsFromUrl(url: string): { lat: number; lng: number } | null {
+  if (!url) return null;
+  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+
+  const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+
+  const directMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (directMatch) return { lat: parseFloat(directMatch[1]), lng: parseFloat(directMatch[2]) };
+
+  return null;
+}
+
 export function AddressForm({ type, data, onChange, compact = false }: AddressFormProps) {
   const [mapCoords, setMapCoords] = useState({
     lat: data?.latitude || 17.385,
@@ -32,7 +46,7 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
     onChange({
       latitude: mapCoords.lat,
       longitude: mapCoords.lng,
-      mapUrl: `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
+      mapUrl: data?.mapUrl || `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
     });
   }, [mapCoords]);
 
@@ -120,7 +134,24 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
 
       {/* Map Section */}
       <div className="mt-4">
-        <label className="form-label">Location on Map</label>
+        <label className="form-label mb-2 block">Location on Map / Custom Google Maps Link</label>
+        <div className="mb-3">
+          <Input
+            label="Google Maps URL / Coordinates Query"
+            placeholder="Paste Google Maps URL (e.g. https://maps.google.com/?q=...) or enter Lat, Lng"
+            value={data?.mapUrl || ''}
+            onChange={(e) => {
+              const url = e.target.value;
+              const coords = parseCoordsFromUrl(url);
+              if (coords) {
+                setMapCoords(coords);
+                onChange({ mapUrl: url, latitude: coords.lat, longitude: coords.lng });
+              } else {
+                onChange({ mapUrl: url });
+              }
+            }}
+          />
+        </div>
         <div className="glass-card overflow-hidden">
           <div className="relative h-48 bg-slate-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
@@ -140,13 +171,13 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
               className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
             >
               <MapPin className="w-4 h-4" />
-              Use Current Location
+              Use Current GPS Location
             </button>
             <button
               type="button"
               onClick={() =>
                 window.open(
-                  `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
+                  data?.mapUrl || `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
                   '_blank'
                 )
               }
