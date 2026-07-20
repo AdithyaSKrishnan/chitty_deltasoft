@@ -125,7 +125,7 @@ export default function AddCustomerPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in max-w-lg mx-auto pb-44">
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => (step > 1 ? setStep(step - 1) : navigate(-1))}
@@ -330,7 +330,7 @@ export default function AddCustomerPage() {
         )}
       </div>
 
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50 z-50">
         <div className="max-w-lg mx-auto flex gap-3">
           {step < totalSteps ? (
             <Button
