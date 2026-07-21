@@ -18,29 +18,56 @@ class _CustomersScreenState
 
   List customers = [];
   List filteredCustomers = [];
+  String userRole = '';
+  String activeTab = 'All';
 
-  final searchController =
-    TextEditingController();
+  final searchController = TextEditingController();
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    loadRole();
     loadCustomers();
+  }
+
+  Future<void> loadRole() async {
+    final role = await AuthService.getRole();
+    if (mounted) {
+      setState(() {
+        userRole = role ?? '';
+      });
+    }
   }
 
   Future<void> loadCustomers() async {
     final data = await AuthService.getCustomers();
-    final approvedData = data.where((item) => item['approval_status'] == 'Approved').toList();
 
-    print("CUSTOMERS DATA (APPROVED ONLY):");
-    print(approvedData);
-    print("COUNT = ${approvedData.length}");
+    if (!mounted) return;
+    setState(() {
+      customers = data;
+      applyFilter();
+      isLoading = false;
+    });
+  }
+
+  void applyFilter() {
+    final search = searchController.text.toLowerCase().trim();
 
     setState(() {
-      customers = approvedData;
-      filteredCustomers = approvedData;
-      isLoading = false;
+      filteredCustomers = customers.where((c) {
+        final matchesSearch = search.isEmpty ||
+            (c['full_name'] ?? '').toString().toLowerCase().contains(search) ||
+            (c['customer_id'] ?? '').toString().toLowerCase().contains(search) ||
+            (c['mobile_number'] ?? '').toString().toLowerCase().contains(search);
+
+        final isApproved = c['approval_status'] == 'Approved';
+        final matchesTab = activeTab == 'All' ||
+            (activeTab == 'Pending' && !isApproved) ||
+            (activeTab == 'Approved' && isApproved);
+
+        return matchesSearch && matchesTab;
+      }).toList();
     });
   }
   /*Future<void> deleteCustomer(
@@ -248,62 +275,48 @@ class _CustomersScreenState
                 ),
 
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    /// TABS
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _tabButton('All', customers.length),
+                          const SizedBox(width: 8),
+                          _tabButton(
+                            'Pending',
+                            customers.where((c) => c['approval_status'] != 'Approved').length,
+                            badgeColor: Colors.amber,
+                          ),
+                          const SizedBox(width: 8),
+                          _tabButton(
+                            'Approved',
+                            customers.where((c) => c['approval_status'] == 'Approved').length,
+                            badgeColor: Colors.green,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
 
                     /// SEARCH
                     TextField(
-  controller: searchController,
-
-  onChanged: (value) {
-
-    setState(() {
-
-      filteredCustomers = customers.where((customer) {
-
-        final search =
-            value.toLowerCase();
-
-        return (customer['full_name'] ?? '')
-                .toString()
-                .toLowerCase()
-                .contains(search) ||
-
-            (customer['customer_id'] ?? '')
-                .toString()
-                .toLowerCase()
-                .contains(search) ||
-
-            (customer['mobile_number'] ?? '')
-                .toString()
-                .toLowerCase()
-                .contains(search);
-
-      }).toList();
-    });
-  },
-
-  style: const TextStyle(
-    color: Colors.white,
-  ),
-
+                      controller: searchController,
+                      onChanged: (_) => applyFilter(),
+                      style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText:
-                            'Search by name, ID, or phone...',
-
-                        hintStyle:
-                            const TextStyle(color: Colors.white54),
-
+                        hintText: 'Search by name, ID, or phone...',
+                        hintStyle: const TextStyle(color: Colors.white54),
                         prefixIcon: const Icon(
                           Icons.search,
                           color: Colors.white54,
                         ),
-
                         filled: true,
                         fillColor: const Color(0xFF0F172A),
-
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -663,51 +676,83 @@ rows: filteredCustomers.map<DataRow>((customer)  {
               ),
 
               child: Row(
-  children: [
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              customer['full_name'] ?? '',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (customer['is_edit_unlocked'] == true) ...[
+                              const SizedBox(width: 6),
+                              const Text("🔓", style: TextStyle(fontSize: 14)),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              customer['customer_id'] ?? '',
+                              style: const TextStyle(color: Colors.white54, fontSize: 12),
+                            ),
+                            if (customer['approval_status'] != 'Approved') ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.amber, width: 0.5),
+                                ),
+                                child: const Text(
+                                  "Pending Approval",
+                                  style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
-    Expanded(
-      flex: 2,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            customer['full_name'] ?? '',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          if (customer['is_edit_unlocked'] == true) ...[
-            const SizedBox(width: 6),
-            const Text(
-              "🔓",
-              style: TextStyle(fontSize: 14),
-            ),
-          ],
-        ],
-      ),
-    ),
+                  Text(
+                    customer['mobile_number'] ?? '',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
 
-    Expanded(
-      child: Text(
-        customer['mobile_number'] ?? '',
-        textAlign: TextAlign.right,
-        style: const TextStyle(
-          color: Colors.white,
-        ),
-      ),
-    ),
-
-    const SizedBox(width: 8),
-
-    const Icon(
-      Icons.chevron_right,
-      color: Colors.white38,
-      size: 20,
-    ),
-
-  ],
-),
+                  if ((userRole == 'admin' || userRole == 'subadmin') && customer['approval_status'] != 'Approved') ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.green),
+                      tooltip: "Approve Customer",
+                      onPressed: () async {
+                        final success = await AuthService.approveCustomer(customer['id']);
+                        if (success) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Customer Approved!")),
+                          );
+                          loadCustomers();
+                        }
+                      },
+                    ),
+                  ] else ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+                  ],
+                ],
+              ),
             ),
 
             const Divider(
@@ -717,9 +762,7 @@ rows: filteredCustomers.map<DataRow>((customer)  {
           ],
         ),
       );
-
     }).toList(),
-
   ],
 )
                   ],
@@ -727,6 +770,53 @@ rows: filteredCustomers.map<DataRow>((customer)  {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tabButton(String title, int count, {Color badgeColor = Colors.blue}) {
+    final bool isSelected = activeTab == title;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          activeTab = title;
+          applyFilter();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected ? null : Border.all(color: Colors.white24),
+        ),
+        child: Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white.withOpacity(0.2) : badgeColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: isSelected ? Colors.white : badgeColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

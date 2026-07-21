@@ -715,8 +715,19 @@ const SizedBox(height: 30),
                         if (!mounted) return;
 
                         if (result != null) {
+                          final role = await AuthService.getRole();
+                          if (role == 'admin' || role == 'subadmin') {
+                            await AuthService.approveCustomer(result['id']);
+                          }
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Onboarding Request Submitted Successfully!")),
+                            SnackBar(
+                              content: Text(
+                                (role == 'admin' || role == 'subadmin')
+                                    ? "Customer Onboarded and Approved Successfully!"
+                                    : "Onboarding Request Submitted Successfully!",
+                              ),
+                            ),
                           );
                           Navigator.popUntil(context, (route) => route.isFirst);
                         } else {

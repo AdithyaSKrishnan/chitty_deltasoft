@@ -641,8 +641,20 @@ final result = await AuthService.createCustomer(
 );
 
 if (result != null) {
+  final role = await AuthService.getRole();
+  if (role == 'admin' || role == 'subadmin') {
+    await AuthService.approveCustomer(result['id']);
+  }
   if (!mounted) return;
-
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        (role == 'admin' || role == 'subadmin')
+            ? "Customer Onboarded and Approved Successfully!"
+            : "Onboarding Request Submitted Successfully!",
+      ),
+    ),
+  );
   Navigator.of(context).popUntil((route) => route.isFirst);
 } else {
   if (!mounted) return;

@@ -276,6 +276,73 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
         child: ListView(
           children: [
+            if ((_role == 'admin' || _role == 'subadmin') && customer['approval_status'] != 'Approved') ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.15),
+                  border: Border.all(color: Colors.amber),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.how_to_reg, color: Colors.amber, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          "Pending Onboarding Approval",
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "This customer was onboarded by an agent and requires your approval.",
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check_circle, color: Colors.white),
+                        label: const Text(
+                          "Approve Customer Onboarding",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        onPressed: () async {
+                          final success = await AuthService.approveCustomer(customer['id']);
+                          if (success) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Customer Onboarding Approved!")),
+                            );
+                            Navigator.pop(context, true);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (customer['is_edit_unlocked'] == true) ...[
               Container(
                 padding: const EdgeInsets.all(12),
