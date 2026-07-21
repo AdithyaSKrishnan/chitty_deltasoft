@@ -711,79 +711,165 @@ GridView.count(
 
 const SizedBox(height: 30),
 
+              // Option 1: Quick Save Customer (Name & Phone only)
               SizedBox(
-
                 width: double.infinity,
-
                 height: 55,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (nameController.text.trim().isEmpty || mobileController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please enter Full Name and Mobile Number")),
+                      );
+                      return;
+                    }
 
-                child: ElevatedButton(
+                    final result = await AuthService.createCustomer(
+                      fullName: nameController.text.trim(),
+                      mobileNumber: mobileController.text.trim(),
+                      alternateNumber: alternateController.text.trim(),
+                      email: emailController.text.trim(),
+                      customerType: selectedCustomerType,
+                      otherCustomerType: otherCustomerTypeController.text.trim(),
+                      houseName: houseController.text.trim(),
+                      landmark: landmarkController.text.trim(),
+                      village: villageController.text.trim(),
+                      taluk: talukController.text.trim(),
+                      district: districtController.text.trim(),
+                      state: stateController.text.trim(),
+                      pincode: pincodeController.text.trim(),
+                      homeLatitude: customerLocation.latitude,
+                      homeLongitude: customerLocation.longitude,
+                      currentHouseName: '',
+                      currentLandmark: '',
+                      currentVillage: '',
+                      currentTaluk: '',
+                      currentDistrict: '',
+                      currentState: '',
+                      currentPincode: '',
+                      currentLatitude: 0,
+                      currentLongitude: 0,
+                      companyName: '',
+                      officeAddress: '',
+                      workLandmark: '',
+                      workVillage: '',
+                      workTaluk: '',
+                      workDistrict: '',
+                      workState: '',
+                      workPincode: '',
+                      workLatitude: 0,
+                      workLongitude: 0,
+                      customerPhoto: customerPhotoFile,
+                      homeAddressProof: addressProofFile,
+                      idProof: idProofFile,
+                    );
 
-                  onPressed: () {
-
-  // Personal Information
-  widget.formData.fullName = nameController.text;
-  widget.formData.mobileNumber = mobileController.text;
-  widget.formData.alternateNumber = alternateController.text;
-  widget.formData.email = emailController.text;
-  widget.formData.customerType = selectedCustomerType;
-
-widget.formData.otherCustomerType =
-    otherCustomerTypeController.text;
-  // Home Address
-  widget.formData.homeHouseName = houseController.text;
-  widget.formData.homeLandmark = landmarkController.text;
-  widget.formData.homeVillage = villageController.text;
-  widget.formData.homeTaluk = talukController.text;
-  widget.formData.homeDistrict = districtController.text;
-  widget.formData.homeState = stateController.text;
-  widget.formData.homePincode = pincodeController.text;
-
-  widget.formData.homeLatitude = customerLocation.latitude;
-  widget.formData.homeLongitude = customerLocation.longitude;
-
-  // Photos
-  widget.formData.customerPhoto = customerPhotoFile;
-  widget.formData.homeAddressProof = addressProofFile;
-  widget.formData.idProof = idProofFile;
-
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => AddCustomerStep2(
-        formData: widget.formData,
-      ),
-    ),
-  );
-
-},
-
-                  style: ElevatedButton.styleFrom(
-
-                    backgroundColor: Colors.blue,
-
-                    shape: RoundedRectangleBorder(
-
-                      borderRadius: BorderRadius.circular(16),
-
-                    ),
-
-                  ),
-
-                  child: const Text(
-
-                    "Next",
-
+                    if (result != null) {
+                      final role = await AuthService.getRole();
+                      if (role == 'admin' || role == 'subadmin') {
+                        await AuthService.approveCustomer(result['id']);
+                      }
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            (role == 'admin' || role == 'subadmin')
+                                ? "Customer Onboarded and Approved Successfully!"
+                                : "Customer Onboarding Request Submitted Successfully!",
+                          ),
+                        ),
+                      );
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Failed to save customer.")),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.check_circle, color: Colors.white),
+                  label: const Text(
+                    "Save Customer",
                     style: TextStyle(
-
                       fontSize: 18,
-
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-
                   ),
-
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
+              ),
 
+              const SizedBox(height: 14),
+
+              // Option 2: Proceed to Add Address Details (Optional)
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    if (nameController.text.trim().isEmpty || mobileController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please enter Full Name and Mobile Number")),
+                      );
+                      return;
+                    }
+
+                    // Personal Information
+                    widget.formData.fullName = nameController.text;
+                    widget.formData.mobileNumber = mobileController.text;
+                    widget.formData.alternateNumber = alternateController.text;
+                    widget.formData.email = emailController.text;
+                    widget.formData.customerType = selectedCustomerType;
+                    widget.formData.otherCustomerType = otherCustomerTypeController.text;
+
+                    // Home Address
+                    widget.formData.homeHouseName = houseController.text;
+                    widget.formData.homeLandmark = landmarkController.text;
+                    widget.formData.homeVillage = villageController.text;
+                    widget.formData.homeTaluk = talukController.text;
+                    widget.formData.homeDistrict = districtController.text;
+                    widget.formData.homeState = stateController.text;
+                    widget.formData.homePincode = pincodeController.text;
+
+                    widget.formData.homeLatitude = customerLocation.latitude;
+                    widget.formData.homeLongitude = customerLocation.longitude;
+
+                    // Photos
+                    widget.formData.customerPhoto = customerPhotoFile;
+                    widget.formData.homeAddressProof = addressProofFile;
+                    widget.formData.idProof = idProofFile;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddCustomerStep2(
+                          formData: widget.formData,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
+                  label: const Text(
+                    "Next: Add Address Details (Optional)",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.blue, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
               ),
 
             ],

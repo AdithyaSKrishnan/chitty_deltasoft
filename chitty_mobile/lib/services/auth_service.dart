@@ -235,37 +235,44 @@ request.headers['Authorization'] =
 
 request.fields['full_name'] = fullName;
 request.fields['mobile_number'] = mobileNumber;
-request.fields['alternate_number'] = alternateNumber;
-request.fields['email'] = email;
-request.fields['customer_type'] =
-    customerType == "Other"
-        ? otherCustomerType
-        : customerType;
+if (alternateNumber.trim().isNotEmpty) {
+  request.fields['alternate_number'] = alternateNumber;
+}
+if (email.trim().isNotEmpty) {
+  request.fields['email'] = email;
+}
+final resolvedType = customerType == "Other" ? otherCustomerType : customerType;
+request.fields['customer_type'] = resolvedType.trim().isNotEmpty ? resolvedType : "Customer";
 
-request.fields['home_address'] = jsonEncode({
-  'house_name': houseName,
-  'building_name': '',
-  'landmark': landmark,
-  'village': village,
-  'taluk': taluk,
-  'district': district,
-  'state': state,
-  'pincode': pincode,
-  'latitude': homeLatitude,
-  'longitude': homeLongitude,
-});
-request.fields['current_address'] = jsonEncode({
-  'house_name': currentHouseName,
-  'building_name': '',
-  'landmark': currentLandmark,
-  'village': currentVillage,
-  'taluk': currentTaluk,
-  'district': currentDistrict,
-  'state': currentState,
-  'pincode': currentPincode,
-  'latitude': currentLatitude,
-  'longitude': currentLongitude,
-});
+if (houseName.trim().isNotEmpty || landmark.trim().isNotEmpty || village.trim().isNotEmpty || pincode.trim().isNotEmpty) {
+  request.fields['home_address'] = jsonEncode({
+    'house_name': houseName,
+    'building_name': '',
+    'landmark': landmark,
+    'village': village,
+    'taluk': taluk,
+    'district': district,
+    'state': state,
+    'pincode': pincode,
+    'latitude': homeLatitude,
+    'longitude': homeLongitude,
+  });
+}
+
+if (currentHouseName.trim().isNotEmpty || currentLandmark.trim().isNotEmpty || currentVillage.trim().isNotEmpty || currentPincode.trim().isNotEmpty) {
+  request.fields['current_address'] = jsonEncode({
+    'house_name': currentHouseName,
+    'building_name': '',
+    'landmark': currentLandmark,
+    'village': currentVillage,
+    'taluk': currentTaluk,
+    'district': currentDistrict,
+    'state': currentState,
+    'pincode': currentPincode,
+    'latitude': currentLatitude,
+    'longitude': currentLongitude,
+  });
+}
 
 if (companyName.trim().isNotEmpty || officeAddress.trim().isNotEmpty || workLandmark.trim().isNotEmpty) {
   request.fields['work_address'] = jsonEncode({
