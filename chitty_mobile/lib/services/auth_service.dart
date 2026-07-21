@@ -505,6 +505,41 @@ static Future<bool> updateCustomer({
   print("Response: ${response.body}");
   return response.statusCode == 200 || response.statusCode == 202;
 }
+
+static Future<bool> updateCustomerKyc({
+  required int customerId,
+  File? customerPhoto,
+  File? addressProof,
+  File? idProof,
+}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+
+  final request = http.MultipartRequest(
+    'PATCH',
+    Uri.parse('$baseUrl/customers/$customerId/'),
+  );
+
+  request.headers['Authorization'] = 'Bearer $token';
+
+  if (customerPhoto != null) {
+    request.files.add(await http.MultipartFile.fromPath('customer_photo', customerPhoto.path));
+  }
+  if (addressProof != null) {
+    request.files.add(await http.MultipartFile.fromPath('address_proof', addressProof.path));
+  }
+  if (idProof != null) {
+    request.files.add(await http.MultipartFile.fromPath('id_proof', idProof.path));
+  }
+
+  final streamed = await request.send();
+  final response = await http.Response.fromStream(streamed);
+
+  print("KYC Update Status: ${response.statusCode}");
+  print("KYC Update Body: ${response.body}");
+
+  return response.statusCode == 200 || response.statusCode == 202;
+}
 static Future<List<dynamic>> getChitPlans() async {
 
   final prefs = await SharedPreferences.getInstance();

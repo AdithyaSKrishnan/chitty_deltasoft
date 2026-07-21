@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import 'edit_customer_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class CustomerDetailsScreen extends StatefulWidget {
    final Map customer;
 
@@ -191,10 +194,152 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 icon: const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
                 label: const Text("Open Maps", style: TextStyle(color: Colors.blue, fontSize: 12)),
               ),
-            ],
-          ),
-        ),
-      ],
+  void _showUpdateKycModal() {
+    File? newPhoto;
+    File? newAddressProof;
+    File? newIdProof;
+    bool isUploading = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final ImagePicker picker = ImagePicker();
+
+            Future<void> pickImg(String target) async {
+              final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+              if (file != null) {
+                setModalState(() {
+                  if (target == 'photo') newPhoto = File(file.path);
+                  if (target == 'address') newAddressProof = File(file.path);
+                  if (target == 'id') newIdProof = File(file.path);
+                });
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Upload / Update KYC Documents",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Customer Photo Picker
+                    ListTile(
+                      leading: Icon(Icons.person, color: newPhoto != null ? Colors.green : Colors.blue),
+                      title: Text(
+                        newPhoto != null ? "Customer Photo Selected" : "Customer Photo",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        newPhoto != null ? newPhoto!.path.split('/').last : "Tap to choose image",
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      onTap: () => pickImg('photo'),
+                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
+                    ),
+
+                    // Address Proof Picker
+                    ListTile(
+                      leading: Icon(Icons.home, color: newAddressProof != null ? Colors.green : Colors.blue),
+                      title: Text(
+                        newAddressProof != null ? "Address Proof Selected" : "Address Proof Document",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        newAddressProof != null ? newAddressProof!.path.split('/').last : "Tap to choose image",
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      onTap: () => pickImg('address'),
+                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
+                    ),
+
+                    // ID Proof Picker
+                    ListTile(
+                      leading: Icon(Icons.badge, color: newIdProof != null ? Colors.green : Colors.blue),
+                      title: Text(
+                        newIdProof != null ? "ID Proof Selected" : "ID Proof Document",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        newIdProof != null ? newIdProof!.path.split('/').last : "Tap to choose image",
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      onTap: () => pickImg('id'),
+                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                        onPressed: isUploading
+                            ? null
+                            : () async {
+                                if (newPhoto == null && newAddressProof == null && newIdProof == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Please select at least one document to upload")),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() {
+                                  isUploading = true;
+                                });
+
+                                final success = await AuthService.updateCustomerKyc(
+                                  customerId: widget.customer['id'],
+                                  customerPhoto: newPhoto,
+                                  addressProof: newAddressProof,
+                                  idProof: newIdProof,
+                                );
+
+                                if (!mounted) return;
+                                Navigator.pop(ctx);
+
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("KYC Documents Uploaded Successfully")),
+                                  );
+                                  setState(() {});
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Failed to upload KYC documents")),
+                                  );
+                                }
+                              },
+                        child: isUploading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Submit KYC Update", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -587,13 +732,28 @@ buildTile(
             _buildEmbeddedMapCard(customer['work_address'], 'Work Location'),
 const SizedBox(height: 20),
 
-const Text(
-  'KYC Documents',
-  style: TextStyle(
-    color: Colors.white,
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-  ),
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text(
+      'KYC Documents',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    ElevatedButton.icon(
+      onPressed: _showUpdateKycModal,
+      icon: const Icon(Icons.upload_file, size: 18, color: Colors.white),
+      label: const Text("Update KYC", style: TextStyle(color: Colors.white, fontSize: 13)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+  ],
 ),
 
 const SizedBox(height: 15),
