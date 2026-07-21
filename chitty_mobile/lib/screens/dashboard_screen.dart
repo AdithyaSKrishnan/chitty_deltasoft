@@ -39,17 +39,20 @@ void initState() {
 }
 
 Future<void> loadStats() async {
-  print("LOAD STATS CALLED");
   try {
-    final data =
-        await DashboardService.getStats();
-
+    final data = await DashboardService.getStats();
+    final customersList = await AuthService.getCustomers();
+    if (!mounted) return;
     setState(() {
       stats = data;
+      stats!['total_customers'] = customersList.length;
       isLoading = false;
     });
   } catch (e) {
+    final customersList = await AuthService.getCustomers();
+    if (!mounted) return;
     setState(() {
+      stats = {'total_customers': customersList.length};
       isLoading = false;
     });
   }

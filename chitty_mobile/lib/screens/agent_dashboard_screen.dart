@@ -28,16 +28,16 @@ class _AgentDashboardScreenState
 
   Future<void> loadDashboard() async {
     final data = await AuthService.getAgentDashboard();
+    final allCustomers = await AuthService.getCustomers();
 
     List<dynamic> customersList = data['recent_customers'] as List? ?? [];
     if (customersList.isEmpty) {
-      final allCustomers = await AuthService.getCustomers();
       customersList = allCustomers;
     }
 
     if (mounted) {
       setState(() {
-        totalCustomers = data['total_customers'] ?? customersList.length;
+        totalCustomers = allCustomers.length;
         activeSubscriptions = data['active_subscriptions'] ?? 0;
         recentCustomers = customersList;
       });
