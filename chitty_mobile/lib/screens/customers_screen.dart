@@ -30,21 +30,19 @@ class _CustomersScreenState
   }
 
   Future<void> loadCustomers() async {
+    final data = await AuthService.getCustomers();
+    final approvedData = data.where((item) => item['approval_status'] == 'Approved').toList();
 
-  final data =
-      await AuthService.getCustomers();
+    print("CUSTOMERS DATA (APPROVED ONLY):");
+    print(approvedData);
+    print("COUNT = ${approvedData.length}");
 
-  print("CUSTOMERS DATA:");
-  print(data);
-  print("COUNT = ${data.length}");
-
-  setState(() {
-
-    customers = data;
-    filteredCustomers = data;
-    isLoading = false;
-  });
-}
+    setState(() {
+      customers = approvedData;
+      filteredCustomers = approvedData;
+      isLoading = false;
+    });
+  }
   /*Future<void> deleteCustomer(
   int customerId,
 ) async {

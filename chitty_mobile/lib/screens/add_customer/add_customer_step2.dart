@@ -34,16 +34,70 @@ class _AddCustomerStep2State extends State<AddCustomerStep2> {
   final districtController = TextEditingController();
   final stateController = TextEditingController();
   final pincodeController = TextEditingController();
+  final mapsUrlController = TextEditingController();
   GoogleMapController? mapController;
+  bool sameAsHomeAddress = false;
 
   LatLng customerLocation = const LatLng(
     8.8932,
     76.6141,
-);
+  );
 
-File? customerPhotoFile;
-File? addressProofFile;
-File? idProofFile;
+  File? customerPhotoFile;
+  File? addressProofFile;
+  File? idProofFile;
+
+  void toggleSameAsHome(bool? val) {
+    setState(() {
+      sameAsHomeAddress = val ?? false;
+      if (sameAsHomeAddress) {
+        houseController.text = widget.formData.homeHouseName ?? '';
+        landmarkController.text = widget.formData.homeLandmark ?? '';
+        villageController.text = widget.formData.homeVillage ?? '';
+        talukController.text = widget.formData.homeTaluk ?? '';
+        districtController.text = widget.formData.homeDistrict ?? '';
+        stateController.text = widget.formData.homeState ?? '';
+        pincodeController.text = widget.formData.homePincode ?? '';
+        
+        if (widget.formData.homeLatitude != null && widget.formData.homeLongitude != null) {
+          customerLocation = LatLng(widget.formData.homeLatitude!, widget.formData.homeLongitude!);
+          mapController?.animateCamera(CameraUpdate.newLatLng(customerLocation));
+        }
+        
+        if (widget.formData.homeAddressProof != null) {
+          addressProofFile = widget.formData.homeAddressProof;
+        }
+      }
+    });
+  }
+
+  void parseMapsUrl(String url) {
+    if (url.trim().isEmpty) return;
+    try {
+      final regExp = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)');
+      final match = regExp.firstMatch(url);
+      if (match != null) {
+        final latStr = match.group(1) ?? match.group(3);
+        final lngStr = match.group(2) ?? match.group(4);
+        if (latStr != null && lngStr != null) {
+          final lat = double.tryParse(latStr);
+          final lng = double.tryParse(lngStr);
+          if (lat != null && lng != null) {
+            final newPos = LatLng(lat, lng);
+            setState(() {
+              customerLocation = newPos;
+            });
+            mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Location set from Google Maps link: $lat, $lng")),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // invalid URL format
+    }
+  }
 
 @override
 void initState() {
@@ -285,8 +339,64 @@ const Text(
     fontWeight: FontWeight.bold,
   ),
 ),
+const SizedBox(height: 10),
 
-const SizedBox(height: 20),
+InkWell(
+  onTap: () => toggleSameAsHome(!sameAsHomeAddress),
+  borderRadius: BorderRadius.circular(12),
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1E293B),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: sameAsHomeAddress ? Colors.blue : Colors.white24),
+    ),
+    child: Row(
+      children: [
+        Checkbox(
+          value: sameAsHomeAddress,
+          onChanged: toggleSameAsHome,
+          activeColor: Colors.blue,
+        ),
+        const Expanded(
+          child: Text(
+            "Same as Home (Permanent) Address",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+const SizedBox(height: 15),
+Padding(
+  padding: const EdgeInsets.only(bottom: 15),
+  child: TextField(
+    controller: mapsUrlController,
+    onChanged: parseMapsUrl,
+    style: const TextStyle(color: Colors.white),
+    decoration: InputDecoration(
+      hintText: "Paste Google Maps Link (e.g. google.com/maps?q=10.01,76.34)",
+      hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+      prefixIcon: const Icon(Icons.link, color: Colors.blue),
+      suffixIcon: IconButton(
+        icon: const Icon(Icons.my_location, color: Colors.blue),
+        onPressed: () => parseMapsUrl(mapsUrlController.text),
+      ),
+      filled: true,
+      fillColor: const Color(0xFF111827),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    ),
+  ),
+),
 
 if (mobile)
 

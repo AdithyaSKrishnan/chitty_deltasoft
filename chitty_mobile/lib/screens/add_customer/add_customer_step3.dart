@@ -35,16 +35,45 @@ class _AddCustomerStep3State extends State<AddCustomerStep3> {
   final pincodeController = TextEditingController();
   final companyController = TextEditingController();
   final officeAddressController = TextEditingController();
+  final mapsUrlController = TextEditingController();
   GoogleMapController? mapController;
 
   LatLng customerLocation = const LatLng(
     8.8932,
     76.6141,
-);
+  );
 
-File? customerPhotoFile;
-File? addressProofFile;
-File? idProofFile;
+  File? customerPhotoFile;
+  File? addressProofFile;
+  File? idProofFile;
+
+  void parseMapsUrl(String url) {
+    if (url.trim().isEmpty) return;
+    try {
+      final regExp = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)');
+      final match = regExp.firstMatch(url);
+      if (match != null) {
+        final latStr = match.group(1) ?? match.group(3);
+        final lngStr = match.group(2) ?? match.group(4);
+        if (latStr != null && lngStr != null) {
+          final lat = double.tryParse(latStr);
+          final lng = double.tryParse(lngStr);
+          if (lat != null && lng != null) {
+            final newPos = LatLng(lat, lng);
+            setState(() {
+              customerLocation = newPos;
+            });
+            mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Location set from Google Maps link: $lat, $lng")),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // invalid URL format
+    }
+  }
 
 @override
 void initState() {
@@ -402,8 +431,30 @@ buildField(
       ),
     ],
   ),
-              //const SizedBox(height: 30),
               const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: TextField(
+                  controller: mapsUrlController,
+                  onChanged: parseMapsUrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "Paste Google Maps Link (e.g. google.com/maps?q=10.01,76.34)",
+                    hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                    prefixIcon: const Icon(Icons.link, color: Colors.blue),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.my_location, color: Colors.blue),
+                      onPressed: () => parseMapsUrl(mapsUrlController.text),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF111827),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
 
 SizedBox(
   height: 320,

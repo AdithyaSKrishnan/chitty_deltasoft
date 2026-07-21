@@ -31,14 +31,11 @@ class _AgentDashboardScreenState
         await AuthService.getAgentDashboard();
 
     setState(() {
-      totalCustomers =
-          data['total_customers'] ?? 0;
-
-      activeSubscriptions =
-          data['active_subscriptions'] ?? 0;
-
-      recentCustomers =
-          data['recent_customers'] ?? [];
+      totalCustomers = data['total_customers'] ?? 0;
+      activeSubscriptions = data['active_subscriptions'] ?? 0;
+      recentCustomers = (data['recent_customers'] as List? ?? [])
+          .where((item) => item['approval_status'] == 'Approved')
+          .toList();
     });
   }
 

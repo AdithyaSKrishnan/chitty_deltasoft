@@ -44,34 +44,28 @@ class ReportsScreen extends StatelessWidget {
 
                       children: [
 
-                        Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-
-                          children: [
-
-                            const Text(
-                              'Reports & Analytics',
-
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 34,
-                                fontWeight:
-                                    FontWeight.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Reports & Analytics',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            const Text(
-                              'View detailed business insights',
-
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
+                              const SizedBox(height: 8),
+                              const Text(
+                                'View detailed business insights',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 15,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
 
                         ElevatedButton.icon(
@@ -478,7 +472,7 @@ class ReportsScreen extends StatelessWidget {
             ],
           ),
 
-          const Spacer(),
+          const SizedBox(height: 12),
 
           Text(
             value,

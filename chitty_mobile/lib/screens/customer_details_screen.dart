@@ -633,8 +633,9 @@ if (customer['id_proof'] != null)
 
   Widget buildTile(
     String title,
-    String value,
+    dynamic value,
   ) {
+    final strVal = (value == null || value.toString().trim().isEmpty) ? '-' : value.toString();
     return Card(
       color: const Color(0xFF1E293B),
 
@@ -647,7 +648,7 @@ if (customer['id_proof'] != null)
         ),
 
         subtitle: Text(
-          value,
+          strVal,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
