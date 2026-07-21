@@ -854,17 +854,14 @@ static Future<bool> approveEditRequest(int requestId, int customerId) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('access_token');
   try {
-    await toggleCustomerEditPermission(customerId, true);
-    final response = await http.patch(
-      Uri.parse('$baseUrl/customer-edit-requests/$requestId/'),
+    final response = await http.post(
+      Uri.parse('$baseUrl/customer-edit-requests/$requestId/approve/'),
       headers: {
         'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'status': 'Approved',
-      }),
     );
+    print("Approve Edit Request status: ${response.statusCode}");
+    print("Approve Edit Request body: ${response.body}");
     return response.statusCode == 200 || response.statusCode == 202;
   } catch (e) {
     print("Error approving edit request: $e");
@@ -876,16 +873,14 @@ static Future<bool> rejectEditRequest(int requestId) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('access_token');
   try {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/customer-edit-requests/$requestId/'),
+    final response = await http.post(
+      Uri.parse('$baseUrl/customer-edit-requests/$requestId/reject/'),
       headers: {
         'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'status': 'Rejected',
-      }),
     );
+    print("Reject Edit Request status: ${response.statusCode}");
+    print("Reject Edit Request body: ${response.body}");
     return response.statusCode == 200 || response.statusCode == 202;
   } catch (e) {
     print("Error rejecting edit request: $e");
