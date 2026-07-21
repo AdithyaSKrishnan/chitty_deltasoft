@@ -56,6 +56,17 @@ late TextEditingController currentDistrictController;
 late TextEditingController currentStateController;
 late TextEditingController currentPincodeController;
 
+late TextEditingController mapUrlController;
+late TextEditingController currentMapUrlController;
+late TextEditingController workMapUrlController;
+
+double? homeLatitude;
+double? homeLongitude;
+double? currentLatitude;
+double? currentLongitude;
+double? workLatitude;
+double? workLongitude;
+
 bool sameAsCurrentAddress = false;
 
 void copyCurrentToHome() {
@@ -66,6 +77,39 @@ void copyCurrentToHome() {
   districtController.text = currentDistrictController.text;
   stateController.text = currentStateController.text;
   pincodeController.text = currentPincodeController.text;
+  mapUrlController.text = currentMapUrlController.text;
+  homeLatitude = currentLatitude;
+  homeLongitude = currentLongitude;
+}
+
+void parseAndSetLocation(String url, String type) {
+  final regExp = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)');
+  final match = regExp.firstMatch(url);
+
+  if (match != null) {
+    double? lat;
+    double? lng;
+    if (match.group(1) != null && match.group(2) != null) {
+      lat = double.tryParse(match.group(1)!);
+      lng = double.tryParse(match.group(2)!);
+    } else if (match.group(3) != null && match.group(4) != null) {
+      lat = double.tryParse(match.group(3)!);
+      lng = double.tryParse(match.group(4)!);
+    }
+
+    if (lat != null && lng != null) {
+      if (type == 'current') {
+        currentLatitude = lat;
+        currentLongitude = lng;
+      } else if (type == 'home') {
+        homeLatitude = lat;
+        homeLongitude = lng;
+      } else if (type == 'work') {
+        workLatitude = lat;
+        workLongitude = lng;
+      }
+    }
+  }
 }
   
   @override
@@ -85,159 +129,147 @@ void copyCurrentToHome() {
     );
 
     alternateController = TextEditingController(
-  text: widget.customer['alternate_number'] ?? '',
-);
+      text: widget.customer['alternate_number'] ?? '',
+    );
 
-houseController = TextEditingController(
-  text: widget.customer['home_address']?['house_name'] ?? '',
-);
+    houseController = TextEditingController(
+      text: widget.customer['home_address']?['house_name'] ?? '',
+    );
 
-landmarkController = TextEditingController(
-  text: widget.customer['home_address']?['landmark'] ?? '',
-);
+    landmarkController = TextEditingController(
+      text: widget.customer['home_address']?['landmark'] ?? '',
+    );
 
-villageController = TextEditingController(
-  text: widget.customer['home_address']?['village'] ?? '',
-);
+    villageController = TextEditingController(
+      text: widget.customer['home_address']?['village'] ?? '',
+    );
 
-talukController = TextEditingController(
-  text: widget.customer['home_address']?['taluk'] ?? '',
-);
+    talukController = TextEditingController(
+      text: widget.customer['home_address']?['taluk'] ?? '',
+    );
 
-districtController = TextEditingController(
-  text: widget.customer['home_address']?['district'] ?? '',
-);
+    districtController = TextEditingController(
+      text: widget.customer['home_address']?['district'] ?? '',
+    );
 
-stateController = TextEditingController(
-  text: widget.customer['home_address']?['state'] ?? '',
-);
+    stateController = TextEditingController(
+      text: widget.customer['home_address']?['state'] ?? '',
+    );
 
-pincodeController = TextEditingController(
-  text: widget.customer['home_address']?['pincode'] ?? '',
-);
-companyController =
-    TextEditingController(
-  text: widget.customer[
-      'work_address']?['building_name'] ?? '',
-);
+    pincodeController = TextEditingController(
+      text: widget.customer['home_address']?['pincode'] ?? '',
+    );
 
-officeAddressController =
-    TextEditingController(
-  text: widget.customer[
-      'work_address']?['house_name'] ?? '',
-);
+    mapUrlController = TextEditingController(
+      text: widget.customer['home_address']?['google_maps_link'] ?? '',
+    );
 
-officePhoneController =
-    TextEditingController(
-  text: widget.customer[
-      'work_address']?['pincode'] ?? '',
-);
+    companyController = TextEditingController(
+      text: widget.customer['work_address']?['building_name'] ?? '',
+    );
 
-officeLandmarkController =
-    TextEditingController(
-  text: widget.customer[
-      'work_address']?['landmark'] ?? '',
-);
-currentHouseController = TextEditingController(
-  text: widget.customer['current_address']?['house_name'] ?? '',
-);
+    officeAddressController = TextEditingController(
+      text: widget.customer['work_address']?['house_name'] ?? '',
+    );
 
-currentBuildingController = TextEditingController(
-  text: widget.customer['current_address']?['building_name'] ?? '',
-);
+    officePhoneController = TextEditingController(
+      text: widget.customer['work_address']?['pincode'] ?? '',
+    );
 
-currentLandmarkController = TextEditingController(
-  text: widget.customer['current_address']?['landmark'] ?? '',
-);
+    officeLandmarkController = TextEditingController(
+      text: widget.customer['work_address']?['landmark'] ?? '',
+    );
 
-currentVillageController = TextEditingController(
-  text: widget.customer['current_address']?['village'] ?? '',
-);
+    workMapUrlController = TextEditingController(
+      text: widget.customer['work_address']?['google_maps_link'] ?? '',
+    );
 
-currentTalukController = TextEditingController(
-  text: widget.customer['current_address']?['taluk'] ?? '',
-);
+    currentHouseController = TextEditingController(
+      text: widget.customer['current_address']?['house_name'] ?? '',
+    );
 
-currentDistrictController = TextEditingController(
-  text: widget.customer['current_address']?['district'] ?? '',
-);
+    currentBuildingController = TextEditingController(
+      text: widget.customer['current_address']?['building_name'] ?? '',
+    );
 
-currentStateController = TextEditingController(
-  text: widget.customer['current_address']?['state'] ?? '',
-);
+    currentLandmarkController = TextEditingController(
+      text: widget.customer['current_address']?['landmark'] ?? '',
+    );
 
-currentPincodeController = TextEditingController(
-  text: widget.customer['current_address']?['pincode'] ?? '',
-);
+    currentVillageController = TextEditingController(
+      text: widget.customer['current_address']?['village'] ?? '',
+    );
+
+    currentTalukController = TextEditingController(
+      text: widget.customer['current_address']?['taluk'] ?? '',
+    );
+
+    currentDistrictController = TextEditingController(
+      text: widget.customer['current_address']?['district'] ?? '',
+    );
+
+    currentStateController = TextEditingController(
+      text: widget.customer['current_address']?['state'] ?? '',
+    );
+
+    currentPincodeController = TextEditingController(
+      text: widget.customer['current_address']?['pincode'] ?? '',
+    );
+
+    currentMapUrlController = TextEditingController(
+      text: widget.customer['current_address']?['google_maps_link'] ?? '',
+    );
+
+    homeLatitude = double.tryParse(widget.customer['home_address']?['latitude']?.toString() ?? '');
+    homeLongitude = double.tryParse(widget.customer['home_address']?['longitude']?.toString() ?? '');
+
+    currentLatitude = double.tryParse(widget.customer['current_address']?['latitude']?.toString() ?? '');
+    currentLongitude = double.tryParse(widget.customer['current_address']?['longitude']?.toString() ?? '');
+
+    workLatitude = double.tryParse(widget.customer['work_address']?['latitude']?.toString() ?? '');
+    workLongitude = double.tryParse(widget.customer['work_address']?['longitude']?.toString() ?? '');
   }
+
   Future<void> updateCustomer() async {
-
-  bool success =
-      await AuthService.updateCustomer(
-
-    customerId: widget.customer['id'],
-
-    fullName: nameController.text,
-
-    mobileNumber: mobileController.text,
-
-    alternateNumber:
-        alternateController.text,
-
-    email: emailController.text,
-
-    houseName:
-        houseController.text,
-
-    landmark:
-        landmarkController.text,
-
-    village:
-        villageController.text,
-
-    taluk:
-        talukController.text,
-
-    district:
-        districtController.text,
-
-    state:
-        stateController.text,
-
-    pincode:
-        pincodeController.text,
-    companyName: companyController.text,
-
-officeAddress: officeAddressController.text,
-
-currentHouseName: currentHouseController.text,
-
-currentBuildingName: currentBuildingController.text,
-
-currentLandmark: currentLandmarkController.text,
-
-currentVillage: currentVillageController.text,
-
-currentTaluk: currentTalukController.text,
-
-currentDistrict: currentDistrictController.text,
-
-currentState: currentStateController.text,
-
-currentPincode: currentPincodeController.text,
-
-officeLandmark: officeLandmarkController.text,
-
-workVillage: "",
-
-workTaluk: "",
-
-workDistrict: "",
-
-workState: "",
-
-workPincode: "",
-  );
+    bool success = await AuthService.updateCustomer(
+      customerId: widget.customer['id'],
+      fullName: nameController.text,
+      mobileNumber: mobileController.text,
+      alternateNumber: alternateController.text,
+      email: emailController.text,
+      houseName: houseController.text,
+      landmark: landmarkController.text,
+      village: villageController.text,
+      taluk: talukController.text,
+      district: districtController.text,
+      state: stateController.text,
+      pincode: pincodeController.text,
+      homeGoogleMapsLink: mapUrlController.text,
+      homeLatitude: homeLatitude,
+      homeLongitude: homeLongitude,
+      currentHouseName: currentHouseController.text,
+      currentBuildingName: currentBuildingController.text,
+      currentLandmark: currentLandmarkController.text,
+      currentVillage: currentVillageController.text,
+      currentTaluk: currentTalukController.text,
+      currentDistrict: currentDistrictController.text,
+      currentState: currentStateController.text,
+      currentPincode: currentPincodeController.text,
+      currentGoogleMapsLink: currentMapUrlController.text,
+      currentLatitude: currentLatitude,
+      currentLongitude: currentLongitude,
+      companyName: companyController.text,
+      officeAddress: officeAddressController.text,
+      officeLandmark: officeLandmarkController.text,
+      workVillage: "",
+      workTaluk: "",
+      workDistrict: "",
+      workState: "",
+      workPincode: "",
+      workGoogleMapsLink: workMapUrlController.text,
+      workLatitude: workLatitude,
+      workLongitude: workLongitude,
+    );
 
   if (success) {
 
@@ -416,6 +448,21 @@ TextField(
   },
 ),
 
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentMapUrlController,
+  decoration: const InputDecoration(
+    labelText: 'Current Google Maps Link',
+    hintText: 'Paste Google Maps link or coordinates',
+    prefixIcon: Icon(Icons.link),
+  ),
+  onChanged: (val) {
+    parseAndSetLocation(val, 'current');
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
 const SizedBox(height: 25),
 
 Row(
@@ -513,6 +560,22 @@ TextField(
     labelText: 'Pincode',
   ),
 ),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: mapUrlController,
+  enabled: !sameAsCurrentAddress,
+  decoration: const InputDecoration(
+    labelText: 'Permanent Google Maps Link',
+    hintText: 'Paste Google Maps link or coordinates',
+    prefixIcon: Icon(Icons.link),
+  ),
+  onChanged: (val) {
+    parseAndSetLocation(val, 'home');
+  },
+),
+
 const SizedBox(height: 25),
 
 const Text(
@@ -546,7 +609,7 @@ const SizedBox(height: 15),
 TextField(
   controller: officePhoneController,
   decoration: const InputDecoration(
-    labelText: 'Office Phone',
+    labelText: 'Office Phone / Pincode',
   ),
 ),
 
@@ -557,6 +620,20 @@ TextField(
   decoration: const InputDecoration(
     labelText: 'Office Landmark',
   ),
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: workMapUrlController,
+  decoration: const InputDecoration(
+    labelText: 'Work Google Maps Link',
+    hintText: 'Paste Google Maps link or coordinates',
+    prefixIcon: Icon(Icons.link),
+  ),
+  onChanged: (val) {
+    parseAndSetLocation(val, 'work');
+  },
 ),
 
 const SizedBox(height: 25),
