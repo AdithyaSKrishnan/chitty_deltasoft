@@ -27,16 +27,21 @@ class _AgentDashboardScreenState
   }
 
   Future<void> loadDashboard() async {
-    final data =
-        await AuthService.getAgentDashboard();
+    final data = await AuthService.getAgentDashboard();
 
-    setState(() {
-      totalCustomers = data['total_customers'] ?? 0;
-      activeSubscriptions = data['active_subscriptions'] ?? 0;
-      recentCustomers = (data['recent_customers'] as List? ?? [])
-          .where((item) => item['approval_status'] == 'Approved')
-          .toList();
-    });
+    List<dynamic> customersList = data['recent_customers'] as List? ?? [];
+    if (customersList.isEmpty) {
+      final allCustomers = await AuthService.getCustomers();
+      customersList = allCustomers;
+    }
+
+    if (mounted) {
+      setState(() {
+        totalCustomers = data['total_customers'] ?? customersList.length;
+        activeSubscriptions = data['active_subscriptions'] ?? 0;
+        recentCustomers = customersList;
+      });
+    }
   }
 
   @override

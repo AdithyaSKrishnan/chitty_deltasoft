@@ -424,6 +424,63 @@ static Future<bool> updateCustomer({
   final token =
       prefs.getString('access_token');
 
+  final Map<String, dynamic> bodyPayload = {
+    'full_name': fullName,
+    'mobile_number': mobileNumber,
+    'alternate_number': alternateNumber,
+    'email': email,
+  };
+
+  if (houseName.trim().isNotEmpty || village.trim().isNotEmpty || district.trim().isNotEmpty || (homeGoogleMapsLink != null && homeGoogleMapsLink.isNotEmpty)) {
+    bodyPayload['home_address'] = {
+      'house_name': houseName,
+      'landmark': landmark,
+      'village': village,
+      'taluk': taluk,
+      'district': district,
+      'state': state,
+      'pincode': pincode,
+      if (homeGoogleMapsLink != null && homeGoogleMapsLink.isNotEmpty)
+        'google_maps_link': homeGoogleMapsLink,
+      if (homeLatitude != null) 'latitude': homeLatitude,
+      if (homeLongitude != null) 'longitude': homeLongitude,
+    };
+  }
+
+  if (currentHouseName.trim().isNotEmpty || currentBuildingName.trim().isNotEmpty || currentVillage.trim().isNotEmpty || currentDistrict.trim().isNotEmpty || (currentGoogleMapsLink != null && currentGoogleMapsLink.isNotEmpty)) {
+    bodyPayload['current_address'] = {
+      'house_name': currentHouseName,
+      'building_name': currentBuildingName,
+      'landmark': currentLandmark,
+      'village': currentVillage,
+      'taluk': currentTaluk,
+      'district': currentDistrict,
+      'state': currentState,
+      'pincode': currentPincode,
+      if (currentGoogleMapsLink != null && currentGoogleMapsLink.isNotEmpty)
+        'google_maps_link': currentGoogleMapsLink,
+      if (currentLatitude != null) 'latitude': currentLatitude,
+      if (currentLongitude != null) 'longitude': currentLongitude,
+    };
+  }
+
+  if (companyName.trim().isNotEmpty || officeAddress.trim().isNotEmpty || officeLandmark.trim().isNotEmpty || (workGoogleMapsLink != null && workGoogleMapsLink.isNotEmpty)) {
+    bodyPayload['work_address'] = {
+      'building_name': companyName,
+      'house_name': officeAddress,
+      'landmark': officeLandmark,
+      'village': workVillage,
+      'taluk': workTaluk,
+      'district': workDistrict,
+      'state': workState,
+      'pincode': workPincode,
+      if (workGoogleMapsLink != null && workGoogleMapsLink.isNotEmpty)
+        'google_maps_link': workGoogleMapsLink,
+      if (workLatitude != null) 'latitude': workLatitude,
+      if (workLongitude != null) 'longitude': workLongitude,
+    };
+  }
+
   final response = await http.patch(
     Uri.parse(
       '$baseUrl/customers/$customerId/',
@@ -432,53 +489,7 @@ static Future<bool> updateCustomer({
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
     },
-    body: jsonEncode({
-      'full_name': fullName,
-      'mobile_number': mobileNumber,
-      'alternate_number': alternateNumber,
-      'email': email,
-      'home_address': {
-        'house_name': houseName,
-        'landmark': landmark,
-        'village': village,
-        'taluk': taluk,
-        'district': district,
-        'state': state,
-        'pincode': pincode,
-        if (homeGoogleMapsLink != null && homeGoogleMapsLink.isNotEmpty)
-          'google_maps_link': homeGoogleMapsLink,
-        if (homeLatitude != null) 'latitude': homeLatitude,
-        if (homeLongitude != null) 'longitude': homeLongitude,
-      },
-      'current_address': {
-        'house_name': currentHouseName,
-        'building_name': currentBuildingName,
-        'landmark': currentLandmark,
-        'village': currentVillage,
-        'taluk': currentTaluk,
-        'district': currentDistrict,
-        'state': currentState,
-        'pincode': currentPincode,
-        if (currentGoogleMapsLink != null && currentGoogleMapsLink.isNotEmpty)
-          'google_maps_link': currentGoogleMapsLink,
-        if (currentLatitude != null) 'latitude': currentLatitude,
-        if (currentLongitude != null) 'longitude': currentLongitude,
-      },
-      'work_address': {
-        'building_name': companyName,
-        'house_name': officeAddress,
-        'landmark': officeLandmark,
-        'village': workVillage,
-        'taluk': workTaluk,
-        'district': workDistrict,
-        'state': workState,
-        'pincode': workPincode,
-        if (workGoogleMapsLink != null && workGoogleMapsLink.isNotEmpty)
-          'google_maps_link': workGoogleMapsLink,
-        if (workLatitude != null) 'latitude': workLatitude,
-        if (workLongitude != null) 'longitude': workLongitude,
-      },
-    }),
+    body: jsonEncode(bodyPayload),
   );
 
   print("Status Code: ${response.statusCode}");
