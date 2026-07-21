@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../services/auth_service.dart';
 
 class EditCustomerScreen extends StatefulWidget {
@@ -26,10 +28,9 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
   late TextEditingController districtController;
   late TextEditingController stateController;
   late TextEditingController pincodeController;
-  late TextEditingController mapUrlController;
 
-  double? latitude;
-  double? longitude;
+  GoogleMapController? mapController;
+  LatLng customerLocation = const LatLng(8.8932, 76.6141);
 
   @override
   void initState() {
@@ -49,37 +50,40 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
     districtController = TextEditingController(text: homeAddr['district'] ?? '');
     stateController = TextEditingController(text: homeAddr['state'] ?? '');
     pincodeController = TextEditingController(text: homeAddr['pincode'] ?? '');
-    mapUrlController = TextEditingController(text: homeAddr['google_maps_link'] ?? '');
 
-    latitude = double.tryParse(homeAddr['latitude']?.toString() ?? '');
-    longitude = double.tryParse(homeAddr['longitude']?.toString() ?? '');
+    final lat = double.tryParse(homeAddr['latitude']?.toString() ?? '');
+    final lng = double.tryParse(homeAddr['longitude']?.toString() ?? '');
+    if (lat != null && lng != null && lat != 0 && lng != 0) {
+      customerLocation = LatLng(lat, lng);
+    } else {
+      getCurrentLocation();
+    }
   }
 
-  void parseAndSetLocation(String url) {
-    final regExp = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)|q=(-?\d+\.\d+),(-?\d+\.\d+)');
-    final match = regExp.firstMatch(url);
+  Future<void> getCurrentLocation() async {
+    try {
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
 
-    if (match != null) {
-      double? lat;
-      double? lng;
-      if (match.group(1) != null && match.group(2) != null) {
-        lat = double.tryParse(match.group(1)!);
-        lng = double.tryParse(match.group(2)!);
-      } else if (match.group(3) != null && match.group(4) != null) {
-        lat = double.tryParse(match.group(3)!);
-        lng = double.tryParse(match.group(4)!);
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
       }
 
-      if (lat != null && lng != null) {
-        setState(() {
-          latitude = lat;
-          longitude = lng;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Location updated: $lat, $lng')),
-        );
-      }
-    }
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+
+      if (!mounted) return;
+      final newLocation = LatLng(position.latitude, position.longitude);
+      setState(() {
+        customerLocation = newLocation;
+      });
+      mapController?.animateCamera(CameraUpdate.newLatLng(newLocation));
+    } catch (_) {}
   }
 
   Future<void> updateCustomer() async {
@@ -96,9 +100,9 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
       district: districtController.text,
       state: stateController.text,
       pincode: pincodeController.text,
-      homeGoogleMapsLink: mapUrlController.text,
-      homeLatitude: latitude,
-      homeLongitude: longitude,
+      homeGoogleMapsLink: '',
+      homeLatitude: customerLocation.latitude,
+      homeLongitude: customerLocation.longitude,
       currentHouseName: houseController.text,
       currentBuildingName: '',
       currentLandmark: landmarkController.text,
@@ -107,9 +111,9 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
       currentDistrict: districtController.text,
       currentState: stateController.text,
       currentPincode: pincodeController.text,
-      currentGoogleMapsLink: mapUrlController.text,
-      currentLatitude: latitude,
-      currentLongitude: longitude,
+      currentGoogleMapsLink: '',
+      currentLatitude: customerLocation.latitude,
+      currentLongitude: customerLocation.longitude,
       companyName: '',
       officeAddress: '',
       officeLandmark: '',
@@ -222,16 +226,69 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
                 controller: pincodeController,
                 decoration: const InputDecoration(labelText: 'Pincode'),
               ),
+              const SizedBox(height: 20),
+
+              // Interactive Google Map Widget
+              SizedBox(
+                height: 300,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: customerLocation,
+                      zoom: 14,
+                    ),
+                    onMapCreated: (controller) {
+                      mapController = controller;
+                    },
+                    onTap: (LatLng position) {
+                      setState(() {
+                        customerLocation = position;
+                      });
+                    },
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('customer'),
+                        position: customerLocation,
+                      ),
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                    zoomControlsEnabled: false,
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 15),
 
-              TextField(
-                controller: mapUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Google Maps Link',
-                  hintText: 'Paste Google Maps link or coordinates',
-                  prefixIcon: Icon(Icons.link),
+              // Selected Location Coordinate Display Box
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111827),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                onChanged: parseAndSetLocation,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Selected Location",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Latitude : ${customerLocation.latitude}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    Text(
+                      "Longitude : ${customerLocation.longitude}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 30),

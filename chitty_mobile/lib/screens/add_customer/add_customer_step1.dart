@@ -583,29 +583,6 @@ else
     ],
   ),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: TextField(
-                  controller: mapsUrlController,
-                  onChanged: parseMapsUrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Paste Google Maps Link (e.g. google.com/maps?q=10.01,76.34)",
-                    hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                    prefixIcon: const Icon(Icons.link, color: Colors.blue),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.my_location, color: Colors.blue),
-                      onPressed: () => parseMapsUrl(mapsUrlController.text),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFF111827),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
 
 SizedBox(
   height: 320,
