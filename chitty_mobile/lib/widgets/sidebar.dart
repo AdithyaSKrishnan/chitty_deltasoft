@@ -7,8 +7,34 @@ import '../screens/chit_plans_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/reports_screen.dart';
 import '../screens/settings_screen.dart';
-class Sidebar extends StatelessWidget {
+import '../services/auth_service.dart';
+class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
+
+  @override
+  State<Sidebar> createState() => _SidebarState();
+}
+
+class _SidebarState extends State<Sidebar> {
+  int pendingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    loadPendingCount();
+  }
+
+  Future<void> loadPendingCount() async {
+    try {
+      final list = await AuthService.getCustomers();
+      final pending = list.where((c) => c['approval_status'] == 'Pending').length;
+      if (mounted) {
+        setState(() {
+          pendingCount = pending;
+        });
+      }
+    } catch (_) {}
+  }
 
   Widget menuItem(
     BuildContext context,
@@ -16,6 +42,7 @@ class Sidebar extends StatelessWidget {
     String title,
     Widget screen, {
     bool active = false,
+    int badgeCount = 0,
   }) {
     return GestureDetector(
       onTap: () {
@@ -54,15 +81,33 @@ class Sidebar extends StatelessWidget {
 
             const SizedBox(width: 14),
 
-            Text(
-              title,
-
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
+
+            if (badgeCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -156,6 +201,7 @@ class Sidebar extends StatelessWidget {
             Icons.people,
             'Customers',
             const CustomersScreen(),
+            badgeCount: pendingCount,
           ),
 
           /// EMPLOYEES
