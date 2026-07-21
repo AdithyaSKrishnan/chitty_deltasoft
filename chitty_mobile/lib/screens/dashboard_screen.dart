@@ -20,23 +20,34 @@ class DashboardScreen extends StatefulWidget {
       _DashboardScreenState();
 }
 
-class _DashboardScreenState
-    extends State<DashboardScreen> {
-      Map<String, dynamic>? stats;
-     
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
+  Map<String, dynamic>? stats;
+  List recentCustomers = [];
+  int pendingKycCount = 0;
+  List recentSubscriptions = [];
+  bool isLoading = true;
 
-List recentCustomers = [];
-int pendingKycCount = 0;
-List recentSubscriptions = [];
-bool isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    loadStats();
+    loadDashboard();
+  }
 
-@override
-void initState() {
-  super.initState();
-  loadStats();
-  loadDashboard();
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-}
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadStats();
+      loadDashboard();
+    }
+  }
 
 Future<void> loadStats() async {
   try {
@@ -448,7 +459,11 @@ Widget actionCard(
                           value: '${stats?['total_customers'] ?? 0}',
                           icon: Icons.people,
                           color: Colors.blue,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomersScreen())),
+                          onTap: () async {
+                            await Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen()));
+                            await loadStats();
+                            await loadDashboard();
+                          },
                         ),
                         DashboardCard(
                           title: 'Active Chitties',

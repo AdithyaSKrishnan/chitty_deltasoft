@@ -12,9 +12,7 @@ class AgentDashboardScreen extends StatefulWidget {
       _AgentDashboardScreenState();
 }
 
-class _AgentDashboardScreenState
-    extends State<AgentDashboardScreen> {
-
+class _AgentDashboardScreenState extends State<AgentDashboardScreen> with WidgetsBindingObserver {
   int totalCustomers = 0;
   int activeSubscriptions = 0;
 
@@ -23,7 +21,21 @@ class _AgentDashboardScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     loadDashboard();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadDashboard();
+    }
   }
 
   Future<void> loadDashboard() async {
@@ -371,7 +383,10 @@ class _AgentDashboardScreenState
                           totalCustomers.toString(),
                           Icons.people,
                           Colors.blue,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomersScreen())),
+                          onTap: () async {
+                            await Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen()));
+                            loadDashboard();
+                          },
                         ),
 
                         statsCard(
