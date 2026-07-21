@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../widgets/dashboard_card.dart';
 import '../widgets/info_container.dart';
 import '../widgets/sidebar.dart';
+import 'customers_screen.dart';
+import 'subscriptions_screen.dart';
 import 'employees_screen.dart';
 import 'chit_plans_screen.dart';
 import 'reports_screen.dart';
