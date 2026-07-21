@@ -55,6 +55,18 @@ late TextEditingController currentTalukController;
 late TextEditingController currentDistrictController;
 late TextEditingController currentStateController;
 late TextEditingController currentPincodeController;
+
+bool sameAsCurrentAddress = false;
+
+void copyCurrentToHome() {
+  houseController.text = currentHouseController.text;
+  landmarkController.text = currentLandmarkController.text;
+  villageController.text = currentVillageController.text;
+  talukController.text = currentTalukController.text;
+  districtController.text = currentDistrictController.text;
+  stateController.text = currentStateController.text;
+  pincodeController.text = currentPincodeController.text;
+}
   
   @override
   void initState() {
@@ -310,80 +322,7 @@ TextField(
 
 const SizedBox(height: 25),
 
-const Text(
-  'Home Address',
-  style: TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: houseController,
-  decoration: const InputDecoration(
-    labelText: 'House Name',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: landmarkController,
-  decoration: const InputDecoration(
-    labelText: 'Landmark',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: villageController,
-  decoration: const InputDecoration(
-    labelText: 'Village',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: talukController,
-  decoration: const InputDecoration(
-    labelText: 'Taluk',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: districtController,
-  decoration: const InputDecoration(
-    labelText: 'District',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: stateController,
-  decoration: const InputDecoration(
-    labelText: 'State',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: pincodeController,
-  decoration: const InputDecoration(
-    labelText: 'Pincode',
-  ),
-),
-
 const SizedBox(height: 25),
-
-
 
 const Text(
   'Current Address',
@@ -398,6 +337,119 @@ const SizedBox(height: 15),
 TextField(
   controller: currentHouseController,
   decoration: const InputDecoration(
+    labelText: 'Current House Name',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentLandmarkController,
+  decoration: const InputDecoration(
+    labelText: 'Current Landmark',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentVillageController,
+  decoration: const InputDecoration(
+    labelText: 'Current Village',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentTalukController,
+  decoration: const InputDecoration(
+    labelText: 'Current Taluk',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentDistrictController,
+  decoration: const InputDecoration(
+    labelText: 'Current District',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentStateController,
+  decoration: const InputDecoration(
+    labelText: 'Current State',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: currentPincodeController,
+  decoration: const InputDecoration(
+    labelText: 'Current Pincode',
+  ),
+  onChanged: (_) {
+    if (sameAsCurrentAddress) copyCurrentToHome();
+  },
+),
+
+const SizedBox(height: 25),
+
+Row(
+  children: [
+    const Text(
+      'Permanent (Home) Address',
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ],
+),
+
+CheckboxListTile(
+  contentPadding: EdgeInsets.zero,
+  title: const Text('Permanent Address is Same as Current Address'),
+  value: sameAsCurrentAddress,
+  onChanged: (val) {
+    setState(() {
+      sameAsCurrentAddress = val ?? false;
+      if (sameAsCurrentAddress) {
+        copyCurrentToHome();
+      }
+    });
+  },
+),
+
+const SizedBox(height: 15),
+
+TextField(
+  controller: houseController,
+  enabled: !sameAsCurrentAddress,
+  decoration: const InputDecoration(
     labelText: 'House Name',
   ),
 ),
@@ -405,16 +457,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentBuildingController,
-  decoration: const InputDecoration(
-    labelText: 'Building Name',
-  ),
-),
-
-const SizedBox(height: 15),
-
-TextField(
-  controller: currentLandmarkController,
+  controller: landmarkController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'Landmark',
   ),
@@ -423,7 +467,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentVillageController,
+  controller: villageController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'Village',
   ),
@@ -432,7 +477,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentTalukController,
+  controller: talukController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'Taluk',
   ),
@@ -441,7 +487,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentDistrictController,
+  controller: districtController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'District',
   ),
@@ -450,7 +497,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentStateController,
+  controller: stateController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'State',
   ),
@@ -459,7 +507,8 @@ TextField(
 const SizedBox(height: 15),
 
 TextField(
-  controller: currentPincodeController,
+  controller: pincodeController,
+  enabled: !sameAsCurrentAddress,
   decoration: const InputDecoration(
     labelText: 'Pincode',
   ),
