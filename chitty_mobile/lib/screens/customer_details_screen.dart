@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import 'edit_customer_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,6 +104,32 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       return "$year-$month-$day $hour:$minute $ampm";
     } catch (e) {
       return val.toString();
+    }
+  }
+
+  Future<void> _openMapLocation(Map? addrData) async {
+    if (addrData == null) return;
+    final lat = addrData['latitude'];
+    final lng = addrData['longitude'];
+    final link = addrData['google_maps_link'];
+
+    String urlStr = '';
+    if (lat != null && lng != null && lat.toString().isNotEmpty && lng.toString().isNotEmpty) {
+      urlStr = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    } else if (link != null && link.toString().isNotEmpty) {
+      urlStr = link.toString();
+    }
+
+    if (urlStr.isNotEmpty) {
+      final uri = Uri.parse(urlStr);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Could not launch map URL: $urlStr")),
+        );
+      }
     }
   }
 
@@ -437,151 +464,86 @@ buildTile(
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 15),
 
-            buildTile(
-              'House Name',
-              customer['home_address']?['house_name'] ?? '-',
+            buildTile('House Name', customer['home_address']?['house_name'] ?? '-'),
+            buildTile('Village', customer['home_address']?['village'] ?? '-'),
+            buildTile('Taluk', customer['home_address']?['taluk'] ?? '-'),
+            buildTile('District', customer['home_address']?['district'] ?? '-'),
+            buildTile('State', customer['home_address']?['state'] ?? '-'),
+            buildTile('Pincode', customer['home_address']?['pincode'] ?? '-'),
+
+            if (customer['home_address']?['latitude'] != null || customer['home_address']?['google_maps_link'] != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _openMapLocation(customer['home_address']),
+                icon: const Icon(Icons.map, color: Colors.blue),
+                label: const Text("Open Home Location in Google Maps", style: TextStyle(color: Colors.blue)),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
+              ),
+            ],
+
+            const SizedBox(height: 25),
+
+            const Text(
+              'Current Address',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            const SizedBox(height: 15),
 
-            buildTile(
-              'Village',
-              customer['home_address']?['village'] ?? '-',
+            buildTile('House Name', customer['current_address']?['house_name'] ?? '-'),
+            buildTile('Building Name', customer['current_address']?['building_name'] ?? '-'),
+            buildTile('Landmark', customer['current_address']?['landmark'] ?? '-'),
+            buildTile('Village', customer['current_address']?['village'] ?? '-'),
+            buildTile('Taluk', customer['current_address']?['taluk'] ?? '-'),
+            buildTile('District', customer['current_address']?['district'] ?? '-'),
+            buildTile('State', customer['current_address']?['state'] ?? '-'),
+            buildTile('Pincode', customer['current_address']?['pincode'] ?? '-'),
+
+            if (customer['current_address']?['latitude'] != null || customer['current_address']?['google_maps_link'] != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _openMapLocation(customer['current_address']),
+                icon: const Icon(Icons.map, color: Colors.blue),
+                label: const Text("Open Current Location in Google Maps", style: TextStyle(color: Colors.blue)),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
+              ),
+            ],
+
+            const SizedBox(height: 25),
+
+            const Text(
+              'Work Address',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            const SizedBox(height: 15),
 
-            buildTile(
-              'Taluk',
-              customer['home_address']?['taluk'] ?? '-',
-            ),
+            buildTile('Company Name', customer['work_address']?['building_name'] ?? '-'),
+            buildTile('Office Address', customer['work_address']?['house_name'] ?? '-'),
+            buildTile('Landmark', customer['work_address']?['landmark'] ?? '-'),
+            buildTile('Village', customer['work_address']?['village'] ?? '-'),
+            buildTile('Taluk', customer['work_address']?['taluk'] ?? '-'),
+            buildTile('District', customer['work_address']?['district'] ?? '-'),
+            buildTile('State', customer['work_address']?['state'] ?? '-'),
+            buildTile('Pincode', customer['work_address']?['pincode'] ?? '-'),
 
-            buildTile(
-              'District',
-              customer['home_address']?['district'] ?? '-',
-            ),
-
-            buildTile(
-              'State',
-              customer['home_address']?['state'] ?? '-',
-            ),
-
-            buildTile(
-              'Pincode',
-              customer['home_address']?['pincode'] ?? '-',
-            ),
-            const SizedBox(height: 20),
-const SizedBox(height: 20),
-
-const Text(
-  'Current Address',
-  style: TextStyle(
-    color: Colors.white,
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-  ),
-),
-
-const SizedBox(height: 15),
-
-buildTile(
-  'House Name',
-  customer['current_address']?['house_name'] ?? '-',
-),
-
-buildTile(
-  'Building Name',
-  customer['current_address']?['building_name'] ?? '-',
-),
-
-buildTile(
-  'Landmark',
-  customer['current_address']?['landmark'] ?? '-',
-),
-
-buildTile(
-  'Village',
-  customer['current_address']?['village'] ?? '-',
-),
-
-buildTile(
-  'Taluk',
-  customer['current_address']?['taluk'] ?? '-',
-),
-
-buildTile(
-  'District',
-  customer['current_address']?['district'] ?? '-',
-),
-
-buildTile(
-  'State',
-  customer['current_address']?['state'] ?? '-',
-),
-
-buildTile(
-  'Pincode',
-  customer['current_address']?['pincode'] ?? '-',
-),
-
-buildTile(
-  'Google Maps',
-  customer['current_address']?['google_maps_link'] ?? '-',
-),
-const Text(
-  'Work Address',
-  style: TextStyle(
-    color: Colors.white,
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-  ),
-),
-
-const SizedBox(height: 15),
-
-buildTile(
-  'Company Name',
-  customer['work_address']?['building_name'] ?? '-',
-),
-
-buildTile(
-  'Office Address',
-  customer['work_address']?['house_name'] ?? '-',
-),
-
-buildTile(
-  'Landmark',
-  customer['work_address']?['landmark'] ?? '-',
-),
-
-buildTile(
-  'Village',
-  customer['work_address']?['village'] ?? '-',
-),
-
-buildTile(
-  'Taluk',
-  customer['work_address']?['taluk'] ?? '-',
-),
-
-buildTile(
-  'District',
-  customer['work_address']?['district'] ?? '-',
-),
-
-buildTile(
-  'State',
-  customer['work_address']?['state'] ?? '-',
-),
-
-buildTile(
-  'Pincode',
-  customer['work_address']?['pincode'] ?? '-',
-),
-
-buildTile(
-  'Google Maps',
-  customer['work_address']?['google_maps_link'] ?? '-',
-),
+            if (customer['work_address']?['latitude'] != null || customer['work_address']?['google_maps_link'] != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _openMapLocation(customer['work_address']),
+                icon: const Icon(Icons.map, color: Colors.blue),
+                label: const Text("Open Work Location in Google Maps", style: TextStyle(color: Colors.blue)),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
+              ),
+            ],
 const SizedBox(height: 20),
 
 const Text(
