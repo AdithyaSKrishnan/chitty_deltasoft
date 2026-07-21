@@ -415,92 +415,57 @@ required String workPincode,
   final token =
       prefs.getString('access_token');
 
-  final response = await http.put(
-
+  final response = await http.patch(
     Uri.parse(
       '$baseUrl/customers/$customerId/',
     ),
-
     headers: {
-
-      'Authorization':
-          'Bearer $token',
-
-      'Content-Type':
-          'application/json',
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
     },
-
     body: jsonEncode({
-
       'full_name': fullName,
-
       'mobile_number': mobileNumber,
-
       'alternate_number': alternateNumber,
-
       'email': email,
-
       'home_address': {
-
+        'customer': customerId,
         'house_name': houseName,
-
         'landmark': landmark,
-
         'village': village,
-
         'taluk': taluk,
-
         'district': district,
-
         'state': state,
-
         'pincode': pincode,
       },
       'current_address': {
-
-  'house_name': currentHouseName,
-
-  'building_name': currentBuildingName,
-
-  'landmark': currentLandmark,
-
-  'village': currentVillage,
-
-  'taluk': currentTaluk,
-
-  'district': currentDistrict,
-
-  'state': currentState,
-
-  'pincode': currentPincode,
-},
-
-'work_address': {
-
-  'building_name': companyName,
-
-  'house_name': officeAddress,
-
-  'landmark': officeLandmark,
-
-  'village': workVillage,
-
-  'taluk': workTaluk,
-
-  'district': workDistrict,
-
-  'state': workState,
-
-  'pincode': workPincode,
-},
+        'customer': customerId,
+        'house_name': currentHouseName,
+        'building_name': currentBuildingName,
+        'landmark': currentLandmark,
+        'village': currentVillage,
+        'taluk': currentTaluk,
+        'district': currentDistrict,
+        'state': currentState,
+        'pincode': currentPincode,
+      },
+      'work_address': {
+        'customer': customerId,
+        'building_name': companyName,
+        'house_name': officeAddress,
+        'landmark': officeLandmark,
+        'village': workVillage,
+        'taluk': workTaluk,
+        'district': workDistrict,
+        'state': workState,
+        'pincode': workPincode,
+      },
     }),
   );
 
-  //print(response.statusCode);
-  //print(response.body);
   print("Status Code: ${response.statusCode}");
   print("Response: ${response.body}");
-  return response.statusCode == 200;
+  return response.statusCode == 200 || response.statusCode == 202;
 }
 static Future<List<dynamic>> getChitPlans() async {
 
