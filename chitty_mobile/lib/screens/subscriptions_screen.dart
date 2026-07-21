@@ -71,34 +71,36 @@ Future<void> loadSubscriptions() async {
 
                       children: [
 
-                        Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
 
-                          children: [
+                            children: [
 
-                            const Text(
-                              'Subscriptions',
+                              const Text(
+                                'Subscriptions',
 
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 34,
-                                fontWeight:
-                                    FontWeight.bold,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 34,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
                               ),
-                            ),
 
-                            const SizedBox(height: 8),
+                              const SizedBox(height: 8),
 
-                            const Text(
-                              'Manage customer subscriptions',
+                              const Text(
+                                'Manage customer subscriptions',
 
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
 
                         ElevatedButton.icon(
@@ -407,9 +409,14 @@ else
   Widget mobileCard(
     Map<String, dynamic> s,
   ) {
+    final customerName = (s['customer_name'] ?? s['customer_id_display'] ?? s['customer'] ?? '').toString();
+    final planName = (s['chit_plan_name'] ?? s['plan'] ?? s['chit_plan_code'] ?? '').toString();
+    final amountVal = (s['amount'] ?? s['monthly_installment'] ?? '0').toString();
+    final joinedDate = (s['joined_date'] ?? s['date'] ?? '').toString();
+    final subStatus = (s['subscription_status'] ?? s['status'] ?? 'Active').toString();
+    final payStatus = (s['payment_status'] ?? s['payment'] ?? 'Pending').toString();
 
     return Container(
-
       margin: const EdgeInsets.only(bottom: 20),
 
       padding: const EdgeInsets.all(18),
@@ -426,7 +433,7 @@ else
         children: [
 
           Text(
-            s['customer'],
+            customerName,
 
             style: const TextStyle(
               color: Colors.white,
@@ -438,7 +445,7 @@ else
           const SizedBox(height: 8),
 
           Text(
-            s['plan'],
+            planName,
 
             style: const TextStyle(
               color: Colors.white54,
@@ -447,19 +454,19 @@ else
 
           const SizedBox(height: 20),
 
-          infoText('Amount', s['amount']),
-          infoText('Joined', s['date']),
+          infoText('Amount', '₹$amountVal'),
+          infoText('Joined', joinedDate),
 
           const SizedBox(height: 15),
 
           Row(
             children: [
 
-              statusChip(s['status']),
+              statusChip(subStatus),
 
               const SizedBox(width: 10),
 
-              paymentChip(s['payment']),
+              paymentChip(payStatus),
             ],
           ),
         ],
@@ -469,7 +476,7 @@ else
 
   Widget infoText(
     String title,
-    String value,
+    dynamic value,
   ) {
 
     return Padding(
@@ -489,7 +496,7 @@ else
 
           Expanded(
             child: Text(
-              value,
+              value?.toString() ?? '',
 
               style: const TextStyle(
                 color: Colors.white,

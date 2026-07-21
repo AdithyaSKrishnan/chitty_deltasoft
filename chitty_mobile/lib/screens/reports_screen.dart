@@ -160,7 +160,7 @@ class ReportsScreen extends StatelessWidget {
                       mainAxisSpacing: 18,
 
                       childAspectRatio:
-                          mobile ? 2.5 : 1.6,
+                          mobile ? 1.7 : 1.6,
 
                       children: [
 
@@ -420,7 +420,7 @@ class ReportsScreen extends StatelessWidget {
 
     return Container(
 
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
@@ -447,7 +447,7 @@ class ReportsScreen extends StatelessWidget {
 
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -455,31 +455,32 @@ class ReportsScreen extends StatelessWidget {
               Container(
 
                 padding:
-                    const EdgeInsets.all(14),
+                    const EdgeInsets.all(12),
 
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius:
                       BorderRadius.circular(
-                          16),
+                          14),
                 ),
 
                 child: Icon(
                   icon,
                   color: Colors.white,
+                  size: 24,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           Text(
             value,
 
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 40,
+              fontSize: 30,
               fontWeight: FontWeight.bold,
             ),
           ),
