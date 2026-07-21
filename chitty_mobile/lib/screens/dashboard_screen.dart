@@ -443,14 +443,14 @@ Widget actionCard(
                           value: '${stats?['total_customers'] ?? 0}',
                           icon: Icons.people,
                           color: Colors.blue,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomersScreen())),
                         ),
                         DashboardCard(
                           title: 'Active Chitties',
                           value: '${stats?['active_subscriptions'] ?? 0}',
                           icon: Icons.account_balance_wallet,
                           color: Colors.green,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SubscriptionsScreen())),
                         ),
 
                         DashboardCard(
@@ -458,7 +458,7 @@ Widget actionCard(
                           value: '₹${stats?['monthly_collections_total'] ?? 0}',
                           icon: Icons.currency_rupee,
                           color: Colors.lightBlueAccent,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReportsScreen())),
                         ),
 
                         DashboardCard(
@@ -466,7 +466,7 @@ Widget actionCard(
                           value: '${stats?['pending_payments'] ?? 0}',
                           icon: Icons.access_time,
                           color: Colors.orange,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SubscriptionsScreen())),
                         ),
 
                         DashboardCard(
@@ -474,7 +474,7 @@ Widget actionCard(
                           value: '${stats?['active_chit_plans'] ?? 0}',
                           icon: Icons.description,
                           color: Colors.lightGreen,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChitPlansScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChitPlansScreen())),
                         ),
 
                         DashboardCard(

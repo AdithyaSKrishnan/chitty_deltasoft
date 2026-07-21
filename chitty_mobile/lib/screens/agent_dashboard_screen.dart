@@ -369,7 +369,7 @@ class _AgentDashboardScreenState
                           totalCustomers.toString(),
                           Icons.people,
                           Colors.blue,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomersScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomersScreen())),
                         ),
 
                         statsCard(
@@ -377,7 +377,7 @@ class _AgentDashboardScreenState
                           activeSubscriptions.toString(),
                           Icons.subscriptions,
                           Colors.green,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentSubscriptionsScreen())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AgentSubscriptionsScreen())),
                         ),
                         
                       ],
