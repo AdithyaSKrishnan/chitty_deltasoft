@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import 'edit_customer_screen.dart';
@@ -131,6 +132,70 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
         );
       }
     }
+  }
+
+  Widget _buildEmbeddedMapCard(Map? addrData, String label) {
+    if (addrData == null) return const SizedBox.shrink();
+
+    final latVal = double.tryParse(addrData['latitude']?.toString() ?? '');
+    final lngVal = double.tryParse(addrData['longitude']?.toString() ?? '');
+
+    if (latVal == null || lngVal == null || (latVal == 0 && lngVal == 0)) {
+      return const SizedBox.shrink();
+    }
+
+    final pos = LatLng(latVal, lngVal);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 240,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: pos,
+                zoom: 15,
+              ),
+              markers: {
+                Marker(
+                  markerId: MarkerId(label),
+                  position: pos,
+                ),
+              },
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: true,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111827),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  "Lat: ${latVal.toStringAsFixed(6)}, Lng: ${lngVal.toStringAsFixed(6)}",
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => _openMapLocation(addrData),
+                icon: const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
+                label: const Text("Open Maps", style: TextStyle(color: Colors.blue, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -473,15 +538,7 @@ buildTile(
             buildTile('State', customer['home_address']?['state'] ?? '-'),
             buildTile('Pincode', customer['home_address']?['pincode'] ?? '-'),
 
-            if (customer['home_address']?['latitude'] != null || customer['home_address']?['google_maps_link'] != null) ...[
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => _openMapLocation(customer['home_address']),
-                icon: const Icon(Icons.map, color: Colors.blue),
-                label: const Text("Open Home Location in Google Maps", style: TextStyle(color: Colors.blue)),
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-              ),
-            ],
+            _buildEmbeddedMapCard(customer['home_address'], 'Home Location'),
 
             const SizedBox(height: 25),
 
@@ -504,15 +561,7 @@ buildTile(
             buildTile('State', customer['current_address']?['state'] ?? '-'),
             buildTile('Pincode', customer['current_address']?['pincode'] ?? '-'),
 
-            if (customer['current_address']?['latitude'] != null || customer['current_address']?['google_maps_link'] != null) ...[
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => _openMapLocation(customer['current_address']),
-                icon: const Icon(Icons.map, color: Colors.blue),
-                label: const Text("Open Current Location in Google Maps", style: TextStyle(color: Colors.blue)),
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-              ),
-            ],
+            _buildEmbeddedMapCard(customer['current_address'], 'Current Location'),
 
             const SizedBox(height: 25),
 
@@ -535,15 +584,7 @@ buildTile(
             buildTile('State', customer['work_address']?['state'] ?? '-'),
             buildTile('Pincode', customer['work_address']?['pincode'] ?? '-'),
 
-            if (customer['work_address']?['latitude'] != null || customer['work_address']?['google_maps_link'] != null) ...[
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => _openMapLocation(customer['work_address']),
-                icon: const Icon(Icons.map, color: Colors.blue),
-                label: const Text("Open Work Location in Google Maps", style: TextStyle(color: Colors.blue)),
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.blue)),
-              ),
-            ],
+            _buildEmbeddedMapCard(customer['work_address'], 'Work Location'),
 const SizedBox(height: 20),
 
 const Text(
