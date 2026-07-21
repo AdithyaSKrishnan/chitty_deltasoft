@@ -25,6 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   List recentCustomers = [];
   int pendingKycCount = 0;
   List recentSubscriptions = [];
+  List pendingEditRequests = [];
   bool isLoading = true;
 
   @override
@@ -105,10 +106,11 @@ Future<void> loadDashboard() async {
     recentSubscriptions =
         await AuthService.getRecentSubscriptions();
 
+    final editReqs = await AuthService.getPendingEditRequests();
+
     setState(() {
-
       pendingKycCount = count;
-
+      pendingEditRequests = editReqs;
     });
     //print("FINAL COUNT = $pendingKycCount");
   } catch (e) {
@@ -437,6 +439,93 @@ Widget actionCard(
                     ),
 
                     const SizedBox(height: 30),
+
+                    if (pendingEditRequests.isNotEmpty) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 25),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.12),
+                          border: Border.all(color: Colors.blue, width: 1.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.edit_notifications, color: Colors.blue, size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Pending Agent Edit Requests (${pendingEditRequests.length})",
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ...pendingEditRequests.map((req) {
+                              final custName = req['customer_name'] ?? 'Customer #${req['customer']}';
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E293B),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(custName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 2),
+                                          Text("Reason: ${req['reason'] ?? 'Profile modification'}", style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                          onPressed: () async {
+                                            final success = await AuthService.approveEditRequest(req['id'], req['customer']);
+                                            if (success) {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text("Edit Request Approved & Unlocked")),
+                                              );
+                                              loadDashboard();
+                                            }
+                                          },
+                                          child: const Text("Approve", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        OutlinedButton(
+                                          style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                                          onPressed: () async {
+                                            final success = await AuthService.rejectEditRequest(req['id']);
+                                            if (success) {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text("Edit Request Rejected")),
+                                              );
+                                              loadDashboard();
+                                            }
+                                          },
+                                          child: const Text("Reject", style: TextStyle(color: Colors.red, fontSize: 12)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     GridView.count(
 

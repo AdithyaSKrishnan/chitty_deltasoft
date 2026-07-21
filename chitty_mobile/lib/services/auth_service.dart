@@ -809,4 +809,87 @@ static Future<bool> createEditRequest(int customerId, String reason) async {
   }
   return false;
 }
+
+static Future<List<dynamic>> getPendingEditRequests() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/customer-edit-requests/?status=Pending'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+  } catch (e) {
+    print("Error getting edit requests: $e");
+  }
+  return [];
+}
+
+static Future<bool> toggleCustomerEditPermission(int customerId, bool enable) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/customers/$customerId/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'edit_enabled': enable,
+      }),
+    );
+    return response.statusCode == 200 || response.statusCode == 202;
+  } catch (e) {
+    print("Error toggling edit permission: $e");
+  }
+  return false;
+}
+
+static Future<bool> approveEditRequest(int requestId, int customerId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    await toggleCustomerEditPermission(customerId, true);
+    final response = await http.patch(
+      Uri.parse('$baseUrl/customer-edit-requests/$requestId/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'status': 'Approved',
+      }),
+    );
+    return response.statusCode == 200 || response.statusCode == 202;
+  } catch (e) {
+    print("Error approving edit request: $e");
+  }
+  return false;
+}
+
+static Future<bool> rejectEditRequest(int requestId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('access_token');
+  try {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/customer-edit-requests/$requestId/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'status': 'Rejected',
+      }),
+    );
+    return response.statusCode == 200 || response.statusCode == 202;
+  } catch (e) {
+    print("Error rejecting edit request: $e");
+  }
+  return false;
+}
 }

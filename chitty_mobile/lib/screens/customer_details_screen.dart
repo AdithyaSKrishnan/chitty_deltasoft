@@ -396,6 +396,26 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 },
               ),
             IconButton(
+              icon: Icon(
+                customer['edit_enabled'] == true ? Icons.lock_open : Icons.lock,
+                color: customer['edit_enabled'] == true ? Colors.green : Colors.orange,
+              ),
+              tooltip: customer['edit_enabled'] == true ? "Lock Agent Edit" : "Unlock Agent Edit",
+              onPressed: () async {
+                final newStatus = !(customer['edit_enabled'] == true);
+                final success = await AuthService.toggleCustomerEditPermission(customer['id'], newStatus);
+                if (success) {
+                  setState(() {
+                    customer['edit_enabled'] = newStatus;
+                  });
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(newStatus ? "Agent Editing Unlocked" : "Agent Editing Locked")),
+                  );
+                }
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
               onPressed: () async {
                 final result = await Navigator.push(
@@ -520,6 +540,50 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
         child: ListView(
           children: [
+            if ((_role == 'admin' || _role == 'subadmin') && _hasPendingRequest) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.15),
+                  border: Border.all(color: Colors.blue),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_notifications, color: Colors.blue, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Field Agent Requested Edit Access", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          SizedBox(height: 2),
+                          Text("Agent needs permission to modify profile data", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                      onPressed: () async {
+                        final success = await AuthService.toggleCustomerEditPermission(customer['id'], true);
+                        if (success) {
+                          setState(() {
+                            customer['edit_enabled'] = true;
+                            _hasPendingRequest = false;
+                          });
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Approved! Agent editing unlocked.")),
+                          );
+                        }
+                      },
+                      child: const Text("Unlock", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if ((_role == 'admin' || _role == 'subadmin') && customer['approval_status'] != 'Approved') ...[
               Container(
                 padding: const EdgeInsets.all(16),
