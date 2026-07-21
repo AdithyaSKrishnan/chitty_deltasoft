@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 //import 'add_customer_step2.dart';
 import 'customer_form_data.dart';
 import 'add_customer_step3.dart';
+import '../../services/auth_service.dart';
 
 class AddCustomerStep2 extends StatefulWidget {
 
