@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:chitty_mobile/services/auth_service.dart';
 import 'add_customer_step2.dart';
 import 'customer_form_data.dart';
 
