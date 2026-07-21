@@ -314,10 +314,11 @@ export default function EditCustomerPage() {
 
         {step === 2 && (
           <div className="space-y-4">
+            {/* CURRENT ADDRESS - FIRST */}
             <Card className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-slate-800 dark:text-white">
-                  Home Address
+                  Current Address
                 </h2>
                 <button
                   type="button"
@@ -329,44 +330,54 @@ export default function EditCustomerPage() {
                 </button>
               </div>
               <AddressForm
-                type="home"
-                data={homeAddress}
-                onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
+                type="current"
+                data={currentAddress}
+                onChange={(data) => {
+                  const updated = { ...currentAddress, ...data };
+                  setCurrentAddress(updated);
+                  if (sameAsCurrentAddress) {
+                    setHomeAddress({ ...updated, type: 'home' as const });
+                  }
+                }}
                 compact
               />
             </Card>
 
-            <label className="flex items-center gap-3 p-4 glass-card cursor-pointer">
-              <input
-                type="checkbox"
-                checked={addCurrentAddress}
-                onChange={(e) => setAddCurrentAddress(e.target.checked)}
-                className="w-5 h-5 rounded text-primary-600"
-              />
-              <div>
-                <p className="font-medium text-slate-800 dark:text-white">
-                  Add Temporary Stay Address
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Include current temporary residence details
-                </p>
-              </div>
-            </label>
-
-            {addCurrentAddress && (
-              <Card className="p-4">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white mb-4">
-                  Current Address
+            {/* PERMANENT ADDRESS - SECOND */}
+            <Card className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+                  Permanent (Home) Address
                 </h2>
+              </div>
+              <label className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sameAsCurrentAddress}
+                  onChange={(e) => {
+                    setSameAsCurrentAddress(e.target.checked);
+                    if (e.target.checked) {
+                      setHomeAddress({ ...currentAddress, type: 'home' as const });
+                    }
+                  }}
+                  className="w-4 h-4 rounded text-primary-600"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Permanent Address is Same as Current Address
+                </span>
+              </label>
+
+              {!sameAsCurrentAddress && (
                 <AddressForm
                   type="home"
-                  data={currentAddress}
-                  onChange={(data) => setCurrentAddress({ ...currentAddress, ...data })}
+                  data={homeAddress}
+                  onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
                   compact
                 />
-              </Card>
-            )}
+              )}
+            </Card>
 
+            {/* WORK ADDRESS - THIRD */}
             <label className="flex items-center gap-3 p-4 glass-card cursor-pointer">
               <input
                 type="checkbox"

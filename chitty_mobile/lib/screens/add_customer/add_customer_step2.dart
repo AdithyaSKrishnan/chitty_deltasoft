@@ -601,68 +601,135 @@ GridView.count(
 
 const SizedBox(height: 30),
 
-              SizedBox(
+              Column(
+                children: [
+                  // Option 1: [+ Add Work Address]
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // Current Address
+                        widget.formData.currentHouseName = houseController.text;
+                        widget.formData.currentBuildingName = '';
+                        widget.formData.currentLandmark = landmarkController.text;
+                        widget.formData.currentVillage = villageController.text;
+                        widget.formData.currentTaluk = talukController.text;
+                        widget.formData.currentDistrict = districtController.text;
+                        widget.formData.currentState = stateController.text;
+                        widget.formData.currentPincode = pincodeController.text;
+                        widget.formData.currentLatitude = customerLocation.latitude;
+                        widget.formData.currentLongitude = customerLocation.longitude;
+                        widget.formData.currentAddressProof = addressProofFile;
 
-                width: double.infinity,
-
-                height: 55,
-
-                child: ElevatedButton(
-
-                  onPressed: () {
-
-  // Current Address
-widget.formData.currentHouseName = houseController.text;
-widget.formData.currentBuildingName = '';
-widget.formData.currentLandmark = landmarkController.text;
-widget.formData.currentVillage = villageController.text;
-widget.formData.currentTaluk = talukController.text;
-widget.formData.currentDistrict = districtController.text;
-widget.formData.currentState = stateController.text;
-widget.formData.currentPincode = pincodeController.text;
-
-widget.formData.currentLatitude = customerLocation.latitude;
-widget.formData.currentLongitude = customerLocation.longitude;
-
-// Current Address Proof
-widget.formData.currentAddressProof = addressProofFile;
-
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => AddCustomerStep3(
-        formData: widget.formData,
-      ),
-    ),
-  );
-
-},
-                  style: ElevatedButton.styleFrom(
-
-                    backgroundColor: Colors.blue,
-
-                    shape: RoundedRectangleBorder(
-
-                      borderRadius: BorderRadius.circular(16),
-
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddCustomerStep3(
+                              formData: widget.formData,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, color: Colors.blue),
+                      label: const Text(
+                        "Add Work Address",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blue, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                     ),
-
                   ),
 
-                  child: const Text(
+                  const SizedBox(height: 15),
 
-                    "Next",
+                  // Option 2: [Submit Onboarding] (Direct submit without work address)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // Current Address
+                        widget.formData.currentHouseName = houseController.text;
+                        widget.formData.currentBuildingName = '';
+                        widget.formData.currentLandmark = landmarkController.text;
+                        widget.formData.currentVillage = villageController.text;
+                        widget.formData.currentTaluk = talukController.text;
+                        widget.formData.currentDistrict = districtController.text;
+                        widget.formData.currentState = stateController.text;
+                        widget.formData.currentPincode = pincodeController.text;
+                        widget.formData.currentLatitude = customerLocation.latitude;
+                        widget.formData.currentLongitude = customerLocation.longitude;
+                        widget.formData.currentAddressProof = addressProofFile;
 
-                    style: TextStyle(
+                        // Submit directly
+                        final result = await AuthService.createCustomer(
+                          fullName: widget.formData.fullName,
+                          mobileNumber: widget.formData.mobileNumber,
+                          alternateNumber: widget.formData.alternateNumber,
+                          email: widget.formData.email,
+                          customerType: widget.formData.customerType,
+                          otherCustomerType: widget.formData.otherCustomerType,
+                          houseName: widget.formData.homeHouseName,
+                          landmark: widget.formData.homeLandmark,
+                          village: widget.formData.homeVillage,
+                          taluk: widget.formData.homeTaluk,
+                          district: widget.formData.homeDistrict,
+                          state: widget.formData.homeState,
+                          pincode: widget.formData.homePincode,
+                          homeLatitude: widget.formData.homeLatitude ?? 0,
+                          homeLongitude: widget.formData.homeLongitude ?? 0,
+                          currentHouseName: widget.formData.currentHouseName,
+                          currentLandmark: widget.formData.currentLandmark,
+                          currentVillage: widget.formData.currentVillage,
+                          currentTaluk: widget.formData.currentTaluk,
+                          currentDistrict: widget.formData.currentDistrict,
+                          currentState: widget.formData.currentState,
+                          currentPincode: widget.formData.currentPincode,
+                          currentLatitude: widget.formData.currentLatitude ?? 0,
+                          currentLongitude: widget.formData.currentLongitude ?? 0,
+                          customerPhoto: widget.formData.customerPhoto,
+                          addressProof: widget.formData.homeAddressProof,
+                          currentAddressProof: widget.formData.currentAddressProof,
+                        );
 
-                      fontSize: 18,
+                        if (!mounted) return;
 
+                        if (result != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Onboarding Request Submitted Successfully!")),
+                          );
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Failed to submit onboarding request.")),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        "Submit Onboarding",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-
                   ),
-
-                ),
-
+                ],
               ),
 
             ],

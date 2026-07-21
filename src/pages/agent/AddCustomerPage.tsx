@@ -23,6 +23,21 @@ export default function AddCustomerPage() {
     email: '',
   });
 
+  const [currentAddress, setCurrentAddress] = useState({
+    id: '',
+    type: 'current' as const,
+    houseOrBuildingName: '',
+    landmark: '',
+    village: '',
+    taluk: '',
+    district: '',
+    state: '',
+    pinCode: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    mapUrl: '',
+  });
+
   const [homeAddress, setHomeAddress] = useState({
     id: '',
     type: 'home' as const,
@@ -65,6 +80,7 @@ export default function AddCustomerPage() {
     joinedDate: new Date().toISOString().split('T')[0],
   });
 
+  const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
   const [addWorkAddress, setAddWorkAddress] = useState(false);
 
   useEffect(() => {
@@ -73,12 +89,22 @@ export default function AddCustomerPage() {
       .catch(() => {});
   }, []);
 
+  const handleToggleSameAsCurrent = (checked: boolean) => {
+    setSameAsCurrentAddress(checked);
+    if (checked) {
+      setHomeAddress({
+        ...currentAddress,
+        type: 'home' as const,
+      });
+    }
+  };
+
   const canProceed = () => {
     switch (step) {
       case 1:
         return customer.name && customer.primaryMobile;
       case 2:
-        return homeAddress.houseOrBuildingName && homeAddress.district && homeAddress.state && homeAddress.pinCode;
+        return currentAddress.houseOrBuildingName && currentAddress.district && currentAddress.state && currentAddress.pinCode;
       case 3:
         return photos.customer && photos.idProof;
       case 4:
@@ -92,9 +118,11 @@ export default function AddCustomerPage() {
     setError('');
     setIsSaving(true);
     try {
+      const finalHomeAddress = sameAsCurrentAddress ? { ...currentAddress, type: 'home' as const } : homeAddress;
       await createCustomerWithDetails({
         customer,
-        homeAddress,
+        homeAddress: finalHomeAddress,
+        currentAddress,
         workAddress: addWorkAddress ? workAddress : null,
         photos,
         subscription: subscription.chitPlanId ? subscription : null,
@@ -112,12 +140,19 @@ export default function AddCustomerPage() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setHomeAddress({
-            ...homeAddress,
+          const updated = {
+            ...currentAddress,
             latitude,
             longitude,
             mapUrl: `https://maps.google.com/?q=${latitude},${longitude}`,
-          });
+          };
+          setCurrentAddress(updated);
+          if (sameAsCurrentAddress) {
+            setHomeAddress({
+              ...updated,
+              type: 'home' as const,
+            });
+          }
         },
         (locationError) => console.error('Error getting location:', locationError),
       );
@@ -200,10 +235,11 @@ export default function AddCustomerPage() {
 
         {step === 2 && (
           <div className="space-y-4">
+            {/* CURRENT ADDRESS - FIRST */}
             <Card className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-slate-800 dark:text-white">
-                  Home Address
+                  Current Address
                 </h2>
                 <button
                   type="button"
@@ -215,13 +251,49 @@ export default function AddCustomerPage() {
                 </button>
               </div>
               <AddressForm
-                type="home"
-                data={homeAddress}
-                onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
+                type="current"
+                data={currentAddress}
+                onChange={(data) => {
+                  const updated = { ...currentAddress, ...data };
+                  setCurrentAddress(updated);
+                  if (sameAsCurrentAddress) {
+                    setHomeAddress({ ...updated, type: 'home' as const });
+                  }
+                }}
                 compact
               />
             </Card>
 
+            {/* PERMANENT ADDRESS - SECOND */}
+            <Card className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+                  Permanent (Home) Address
+                </h2>
+              </div>
+              <label className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sameAsCurrentAddress}
+                  onChange={(e) => handleToggleSameAsCurrent(e.target.checked)}
+                  className="w-4 h-4 rounded text-primary-600"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Permanent Address is Same as Current Address
+                </span>
+              </label>
+
+              {!sameAsCurrentAddress && (
+                <AddressForm
+                  type="home"
+                  data={homeAddress}
+                  onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
+                  compact
+                />
+              )}
+            </Card>
+
+            {/* WORK ADDRESS - THIRD */}
             <label className="flex items-center gap-3 p-4 glass-card cursor-pointer">
               <input
                 type="checkbox"
