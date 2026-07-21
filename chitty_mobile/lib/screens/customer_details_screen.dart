@@ -194,6 +194,13 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 icon: const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
                 label: const Text("Open Maps", style: TextStyle(color: Colors.blue, fontSize: 12)),
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   void _showUpdateKycModal() {
     File? newPhoto;
     File? newAddressProof;
