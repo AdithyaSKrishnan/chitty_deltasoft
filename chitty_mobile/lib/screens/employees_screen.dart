@@ -776,24 +776,52 @@ infoText(
           const SizedBox(height: 12),
 
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-
-              chipWidget(
-                e['role'],
-                Colors.blue,
+              Row(
+                children: [
+                  chipWidget(
+                    e['role'] ?? '',
+                    Colors.blue,
+                  ),
+                  const SizedBox(width: 10),
+                  chipWidget(
+                    e['is_active'] == true ? 'Active' : 'Inactive',
+                    e['is_active'] == true ? Colors.green : Colors.orange,
+                  ),
+                ],
               ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () async {
+                      final result = await showDialog(
+                        context: context,
+                        builder: (_) => EmployeeDialog(
+                          employee: e,
+                        ),
+                      );
 
-              const SizedBox(width: 10),
+                      if (result == true) {
+                        await loadEmployees();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.power_settings_new, color: Colors.white70),
+                    onPressed: () async {
+                      final success = await AuthService.toggleEmployeeStatus(
+                        e['id'],
+                      );
 
-              chipWidget(
-  e['is_active'] == true
-      ? 'Active'
-      : 'Inactive',
-
-  e['is_active'] == true
-      ? Colors.green
-      : Colors.orange,
-),
+                      if (success) {
+                        await loadEmployees();
+                      }
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ],

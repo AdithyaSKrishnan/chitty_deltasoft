@@ -125,35 +125,54 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
         ),
 
         actions: [
-          if ((_role == 'admin' || _role == 'subadmin') && customer['approval_status'] != 'Approved')
-            IconButton(
-              icon: const Icon(
-                Icons.verified,
-                color: Colors.green,
-              ),
-              onPressed: () async {
-                final success = await AuthService.approveCustomer(
-                  customer['id'],
-                );
-
-                if (success) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Customer Approved",
-                      ),
-                    ),
+          if (_role == 'admin' || _role == 'subadmin') ...[
+            if (customer['approval_status'] != 'Approved')
+              IconButton(
+                icon: const Icon(
+                  Icons.verified,
+                  color: Colors.green,
+                ),
+                onPressed: () async {
+                  final success = await AuthService.approveCustomer(
+                    customer['id'],
                   );
 
+                  if (success) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Customer Approved",
+                        ),
+                      ),
+                    );
+
+                    Navigator.pop(context, true);
+                  }
+                },
+              ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditCustomerScreen(
+                      customer: customer,
+                    ),
+                  ),
+                );
+
+                if (result == true) {
+                  if (!mounted) return;
                   Navigator.pop(context, true);
                 }
               },
             ),
-          if (_role == 'field_agent') ...[
+          ] else if (_role == 'field_agent') ...[
             if (customer['edit_enabled'] == true)
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit, color: Colors.blue),
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
