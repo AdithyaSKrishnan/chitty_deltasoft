@@ -113,7 +113,6 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
       companyName: '',
       officeAddress: '',
       officeLandmark: '',
-      officePhone: '',
       workVillage: '',
       workTaluk: '',
       workDistrict: '',
