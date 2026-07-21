@@ -181,69 +181,71 @@ if (!widget.isEdit)
 
               const SizedBox(height: 10),
 
-              const Text(
-                'Role',
-
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+              Row(
+                children: [
+                  const Text(
+                    'Role',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (widget.isEdit && widget.employee?['role'] == 'admin') ...[
+                    const SizedBox(width: 8),
+                    const Text(
+                      '(Admin role cannot be changed)',
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
               ),
 
               const SizedBox(height: 10),
 
               Row(
                 children: [
-
                   Expanded(
-                    child: RadioListTile(
-
+                    child: RadioListTile<String>(
                       value: 'Admin',
                       groupValue: role,
-
                       activeColor: Colors.blue,
-
                       title: const Text(
                         'Admin',
-
                         style: TextStyle(
                           color: Colors.white,
                         ),
                       ),
-
-                      onChanged: (value) {
-
-                        setState(() {
-
-                          role = value!;
-                        });
-                      },
+                      onChanged: (widget.isEdit && widget.employee?['role'] == 'admin')
+                          ? null
+                          : (value) {
+                              setState(() {
+                                role = value!;
+                              });
+                            },
                     ),
                   ),
-
                   Expanded(
-                    child: RadioListTile(
-
+                    child: RadioListTile<String>(
                       value: 'Field Agent',
                       groupValue: role,
-
                       activeColor: Colors.purple,
-
                       title: const Text(
                         'Field Agent',
-
                         style: TextStyle(
                           color: Colors.white,
                         ),
                       ),
-
-                      onChanged: (value) {
-
-                        setState(() {
-
-                          role = value!;
-                        });
-                      },
+                      onChanged: (widget.isEdit && widget.employee?['role'] == 'admin')
+                          ? null
+                          : (value) {
+                              setState(() {
+                                role = value!;
+                              });
+                            },
                     ),
                   ),
                 ],
@@ -252,109 +254,69 @@ if (!widget.isEdit)
               const SizedBox(height: 10),
 
               field(
-  'Password',
-  passwordController,
-),
+                widget.isEdit
+                    ? 'New Password (leave blank to keep current)'
+                    : 'Password',
+                passwordController,
+              ),
 
               const SizedBox(height: 30),
 
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.end,
-
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-
                   OutlinedButton(
-
                     onPressed: () {
                       Navigator.pop(context);
                     },
-
                     child: const Text(
                       'Cancel',
                     ),
                   ),
-
                   const SizedBox(width: 18),
-
                   ElevatedButton(
-
                     onPressed: () async {
+                      bool success;
 
-  bool success;
+                      if (widget.isEdit) {
+                        success = await AuthService.updateEmployee(
+                          employeeId: widget.employee!['id'],
+                          fullName: fullNameController.text,
+                          email: emailController.text,
+                          phoneNumber: phoneController.text,
+                          role: role == 'Admin' ? 'admin' : 'field_agent',
+                          password: passwordController.text.trim().isNotEmpty
+                              ? passwordController.text.trim()
+                              : null,
+                        );
+                      } else {
+                        success = await AuthService.createEmployee(
+                          fullName: fullNameController.text,
+                          username: usernameController.text,
+                          email: emailController.text,
+                          password: passwordController.text,
+                          phoneNumber: phoneController.text,
+                          role: role == 'Admin' ? 'admin' : 'field_agent',
+                        );
+                      }
 
-  if (widget.isEdit) {
-
-    success =
-        await AuthService.updateEmployee(
-
-      employeeId:
-          widget.employee!['id'],
-
-      fullName:
-          fullNameController.text,
-
-      email:
-          emailController.text,
-
-      phoneNumber:
-          phoneController.text,
-
-      role: role == 'Admin'
-          ? 'admin'
-          : 'field_agent',
-    );
-
-  } else {
-
-    success =
-        await AuthService.createEmployee(
-
-      fullName:
-          fullNameController.text,
-
-      username:
-          usernameController.text,
-
-      email:
-          emailController.text,
-
-      password:
-          passwordController.text,
-
-      phoneNumber:
-          phoneController.text,
-
-      role: role == 'Admin'
-          ? 'admin'
-          : 'field_agent',
-    );
-  }
-
-  if (success) {
-
-    Navigator.pop(context, true);
-
-  } else {
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      const SnackBar(
-        content:
-            Text('Operation Failed'),
-      ),
-    );
-  }
-},
-
-                    style:
-                        ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.blue,
+                      if (success) {
+                        if (!mounted) return;
+                        Navigator.pop(context, true);
+                      } else {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Operation Failed'),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
                     ),
-
-                    child: const Text(
-                      'Add Employee',
+                    child: Text(
+                      widget.isEdit ? 'Save Changes' : 'Add Employee',
                     ),
                   ),
                 ],

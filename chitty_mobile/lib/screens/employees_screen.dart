@@ -502,25 +502,29 @@ Text(
                                                 ),
 
                                                 IconButton(
+                                                  onPressed: () async {
+                                                    if (e['role'] == 'admin') {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text("Admin account cannot be deactivated."),
+                                                        ),
+                                                      );
+                                                      return;
+                                                    }
+                                                    final success =
+                                                        await AuthService.toggleEmployeeStatus(
+                                                      e['id'],
+                                                    );
 
-  onPressed: () async {
-
-    final success =
-        await AuthService.toggleEmployeeStatus(
-      e['id'],
-    );
-
-    if (success) {
-
-      await loadEmployees();
-    }
-  },
-
-  icon: const Icon(
-    Icons.power_settings_new,
-    color: Colors.white70,
-  ),
-),
+                                                    if (success) {
+                                                      await loadEmployees();
+                                                    }
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.power_settings_new,
+                                                    color: e['role'] == 'admin' ? Colors.white24 : Colors.white70,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -809,8 +813,19 @@ infoText(
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.power_settings_new, color: Colors.white70),
+                    icon: Icon(
+                      Icons.power_settings_new,
+                      color: e['role'] == 'admin' ? Colors.white24 : Colors.white70,
+                    ),
                     onPressed: () async {
+                      if (e['role'] == 'admin') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Admin account cannot be deactivated."),
+                          ),
+                        );
+                        return;
+                      }
                       final success = await AuthService.toggleEmployeeStatus(
                         e['id'],
                       );

@@ -635,6 +635,7 @@ static Future<bool> updateEmployee({
   required String email,
   required String phoneNumber,
   required String role,
+  String? password,
 }) async {
 
   final prefs =
@@ -643,33 +644,32 @@ static Future<bool> updateEmployee({
   final token =
       prefs.getString('access_token');
 
-  final response = await http.put(
+  final payload = <String, dynamic>{
+    'full_name': fullName,
+    'email': email,
+    'phone_number': phoneNumber,
+    'role': role,
+  };
+  if (password != null && password.trim().isNotEmpty) {
+    payload['password'] = password.trim();
+  }
 
+  final response = await http.patch(
     Uri.parse(
       '$baseUrl/employees/$employeeId/',
     ),
-
     headers: {
       'Authorization':
           'Bearer $token',
       'Content-Type':
           'application/json',
     },
-
-    body: jsonEncode({
-
-      'full_name': fullName,
-      'email': email,
-      'phone_number': phoneNumber,
-      'role': role,
-
-    }),
+    body: jsonEncode(payload),
   );
 
-  print(response.body);
   print("UPDATE STATUS: ${response.statusCode}");
   print("UPDATE BODY: ${response.body}");
-  return response.statusCode == 200;
+  return response.statusCode == 200 || response.statusCode == 202;
 }
 static Future<Map<String, dynamic>> getAgentDashboard() async {
   final prefs =
