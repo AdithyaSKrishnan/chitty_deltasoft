@@ -267,18 +267,20 @@ request.fields['current_address'] = jsonEncode({
   'longitude': currentLongitude,
 });
 
-request.fields['work_address'] = jsonEncode({
-  'building_name': companyName,
-  'house_name': officeAddress,
-  'landmark': workLandmark,
-  'village': workVillage,
-  'taluk': workTaluk,
-  'district': workDistrict,
-  'state': workState,
-  'pincode': workPincode,
-  'latitude': workLatitude,
-  'longitude': workLongitude,
-});
+if (companyName.trim().isNotEmpty || officeAddress.trim().isNotEmpty || workLandmark.trim().isNotEmpty) {
+  request.fields['work_address'] = jsonEncode({
+    'building_name': companyName,
+    'house_name': officeAddress,
+    'landmark': workLandmark,
+    'village': workVillage,
+    'taluk': workTaluk,
+    'district': workDistrict,
+    'state': workState,
+    'pincode': workPincode,
+    'latitude': workLatitude,
+    'longitude': workLongitude,
+  });
+}
 
 if (customerPhoto != null) {
   request.files.add(
