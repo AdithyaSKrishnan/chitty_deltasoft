@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// 🟢 LIVE PRODUCTION BACKEND
-const API_BASE_URL = 'https://chittyapi.orianacare.com/api/';
+// 🔴 LOCAL DEVELOPMENT BACKEND
+const API_BASE_URL = 'http://localhost:8000/api/';
 
-// 🔴 LOCAL DEVELOPMENT BACKEND (Uncomment when running local Django server)
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// 🟢 LIVE PRODUCTION BACKEND (Uncomment when deploying live)
+// const API_BASE_URL = 'https://chittyapi.orianacare.com/api/';
 
 const ACCESS_TOKEN_KEY = 'chitty_access_token';
 const REFRESH_TOKEN_KEY = 'chitty_refresh_token';
