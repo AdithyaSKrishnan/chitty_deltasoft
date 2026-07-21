@@ -6,7 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   
   
-   static const String baseUrl = 'https://chittyapi.orianacare.com/api';
+  // 🔴 LOCAL DEVELOPMENT (Uncomment when adding & testing new features locally)
+  // static const String baseUrl = 'http://192.168.1.166:8000/api';
+
+  // 🟢 LIVE PRODUCTION (Uncomment when building release APK / testing live backend)
+  static const String baseUrl = 'https://chittyapi.orianacare.com/api';
   
   static Future<List<dynamic>> getCustomers() async {
   final prefs = await SharedPreferences.getInstance();
