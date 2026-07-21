@@ -678,18 +678,21 @@ rows: filteredCustomers.map<DataRow>((customer)  {
               child: Row(
                 children: [
                   Expanded(
-                    flex: 2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text(
-                              customer['full_name'] ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                customer['full_name'] ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             if (customer['is_edit_unlocked'] == true) ...[
@@ -699,14 +702,16 @@ rows: filteredCustomers.map<DataRow>((customer)  {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Row(
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 2,
                           children: [
                             Text(
                               customer['customer_id'] ?? '',
                               style: const TextStyle(color: Colors.white54, fontSize: 12),
                             ),
-                            if (customer['approval_status'] != 'Approved') ...[
-                              const SizedBox(width: 8),
+                            if (customer['approval_status'] != 'Approved')
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
@@ -719,22 +724,25 @@ rows: filteredCustomers.map<DataRow>((customer)  {
                                   style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
-                            ],
                           ],
                         ),
                       ],
                     ),
                   ),
 
+                  const SizedBox(width: 8),
+
                   Text(
                     customer['mobile_number'] ?? '',
-                    style: const TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
 
                   if ((userRole == 'admin' || userRole == 'subadmin') && customer['approval_status'] != 'Approved') ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.check_circle, color: Colors.green),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6),
+                      icon: const Icon(Icons.check_circle, color: Colors.green, size: 22),
                       tooltip: "Approve Customer",
                       onPressed: () async {
                         final success = await AuthService.approveCustomer(customer['id']);
@@ -748,7 +756,7 @@ rows: filteredCustomers.map<DataRow>((customer)  {
                       },
                     ),
                   ] else ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
                   ],
                 ],

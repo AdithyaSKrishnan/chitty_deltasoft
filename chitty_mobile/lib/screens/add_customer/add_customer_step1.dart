@@ -469,7 +469,7 @@ if (selectedCustomerType == "Other") ...[
                   ],
                 ),
 const Text(
-  "Home Address",
+  "Address",
   style: TextStyle(
     color: Colors.white,
     fontSize: 24,
@@ -799,73 +799,6 @@ const SizedBox(height: 30),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Option 2: Proceed to Add Address Details (Optional)
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    if (nameController.text.trim().isEmpty || mobileController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please enter Full Name and Mobile Number")),
-                      );
-                      return;
-                    }
-
-                    // Personal Information
-                    widget.formData.fullName = nameController.text;
-                    widget.formData.mobileNumber = mobileController.text;
-                    widget.formData.alternateNumber = alternateController.text;
-                    widget.formData.email = emailController.text;
-                    widget.formData.customerType = selectedCustomerType;
-                    widget.formData.otherCustomerType = otherCustomerTypeController.text;
-
-                    // Home Address
-                    widget.formData.homeHouseName = houseController.text;
-                    widget.formData.homeLandmark = landmarkController.text;
-                    widget.formData.homeVillage = villageController.text;
-                    widget.formData.homeTaluk = talukController.text;
-                    widget.formData.homeDistrict = districtController.text;
-                    widget.formData.homeState = stateController.text;
-                    widget.formData.homePincode = pincodeController.text;
-
-                    widget.formData.homeLatitude = customerLocation.latitude;
-                    widget.formData.homeLongitude = customerLocation.longitude;
-
-                    // Photos
-                    widget.formData.customerPhoto = customerPhotoFile;
-                    widget.formData.homeAddressProof = addressProofFile;
-                    widget.formData.idProof = idProofFile;
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AddCustomerStep2(
-                          formData: widget.formData,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
-                  label: const Text(
-                    "Next: Add Address Details (Optional)",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
