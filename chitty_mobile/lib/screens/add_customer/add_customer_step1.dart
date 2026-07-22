@@ -260,10 +260,24 @@ class _AddCustomerStep1State extends State<AddCustomerStep1> {
     if (res != null) {
       if (res['id'] != null) {
         _createdCustomerId = res['id'];
+
+        // Auto-approve for admin/subadmin — no separate onboarding step needed
+        final role = await AuthService.getRole();
+        if (role == 'admin' || role == 'subadmin') {
+          await AuthService.approveCustomer(res['id']);
+        }
       }
+
+      if (!mounted) return false;
+
+      final role = await AuthService.getRole();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Customer Onboarding Saved & Completed Successfully!"),
+        SnackBar(
+          content: Text(
+            (role == 'admin' || role == 'subadmin')
+                ? "Customer Onboarded and Approved Successfully!"
+                : "Onboarding Request Submitted Successfully!",
+          ),
           backgroundColor: Colors.green,
         ),
       );

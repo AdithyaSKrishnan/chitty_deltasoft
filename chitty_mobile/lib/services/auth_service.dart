@@ -836,4 +836,69 @@ class AuthService {
     return response != null &&
         (response.statusCode == 200 || response.statusCode == 202);
   }
+
+  // ---------------------------------------------------------------------------
+  // CUSTOMER DELETE REQUESTS
+  // ---------------------------------------------------------------------------
+
+  static Future<bool> createDeleteRequest(int customerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    final response = await _safePost(
+      '$baseUrl/customer-delete-requests/',
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'customer': customerId}),
+    );
+
+    return response != null && response.statusCode == 201;
+  }
+
+  static Future<List<dynamic>> getDeleteRequests({int? customerId, String? status}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    String url = '$baseUrl/customer-delete-requests/';
+    List<String> params = [];
+    if (customerId != null) params.add('customer=$customerId');
+    if (status != null) params.add('status=$status');
+    if (params.isNotEmpty) url += '?${params.join('&')}';
+
+    final response = await _safeGet(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response != null && response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  static Future<bool> approveDeleteRequest(int requestId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    final response = await _safePost(
+      '$baseUrl/customer-delete-requests/$requestId/approve/',
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    return response != null && (response.statusCode == 200 || response.statusCode == 202);
+  }
+
+  static Future<bool> rejectDeleteRequest(int requestId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    final response = await _safePost(
+      '$baseUrl/customer-delete-requests/$requestId/reject/',
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    return response != null && (response.statusCode == 200 || response.statusCode == 202);
+  }
 }

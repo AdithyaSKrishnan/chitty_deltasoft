@@ -106,80 +106,8 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     }
   }
 
-  /// Checks edit permission before allowing KYC document updates
+  /// Allows any employee (including field agents) to update KYC documents
   void _handleUpdateKycTap() {
-    if (_role == 'field_agent' && widget.customer['edit_enabled'] != true) {
-      final isDark = ThemeService.isDark;
-      if (_hasPendingRequest) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-            title: Text(
-              "Edit Permission Pending",
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              "Your request for edit permission is currently pending approval by an administrator. Updating KYC is disabled until permission is granted.",
-              style: TextStyle(
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
-                fontSize: 14,
-              ),
-            ),
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Okay", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      } else {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-            title: Text(
-              "Edit Permission Required",
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              "Edit permission must be granted by an administrator to upload or update KYC documents for this customer. Would you like to request edit permission now?",
-              style: TextStyle(
-                color: isDark ? Colors.white70 : const Color(0xFF475569),
-                fontSize: 14,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  "Cancel",
-                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _submitRequestEdit();
-                },
-                child: const Text("Request Permission", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      }
-      return;
-    }
-
     _showUpdateKycModal();
   }
 

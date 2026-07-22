@@ -66,7 +66,6 @@ class IsAdminOrOwnCustomer(BasePermission):
         
         employee = get_employee(request.user)
         if employee is not None:
-            # Allows field agents to view and edit any customer when edit permission is unlocked
             if request.method not in SAFE_METHODS and (obj.approval_status == "Approved" and not obj.edit_enabled):
                 return False
             return True

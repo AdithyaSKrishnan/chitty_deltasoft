@@ -39,6 +39,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   Future<void> loadCustomers() async {
     final data = await AuthService.getCustomers();
+    print("=== [FLUTTER CUSTOMERS SCREEN] Fetched total raw customers: ${data.length} ===");
 
     if (!mounted) return;
     setState(() {
@@ -65,6 +66,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
         return matchesSearch && matchesTab;
       }).toList();
+      print("=== [FLUTTER CUSTOMERS SCREEN] Filter Applied: activeTab='$activeTab', search='$search', totalVisible=${filteredCustomers.length}/${customers.length} ===");
     });
   }
 

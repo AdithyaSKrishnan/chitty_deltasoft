@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import ChitPlan, Customer, Employee, HomeAddress, Subscription, CurrentAddress, WorkAddress, CustomerEditRequest
+from .models import ChitPlan, Customer, Employee, HomeAddress, Subscription, CurrentAddress, WorkAddress, CustomerEditRequest, CustomerDeleteRequest
 from .permissions import (
     IsAdminEmployee, IsAdminOrFieldAgent, IsAdminOrOwnCustomer,
     IsAdminOrOwnCustomerAddress, IsAdminOrOwnCustomerSubscription,
@@ -20,7 +20,8 @@ from .serializers import (
     ChitPlanSerializer, CustomTokenObtainPairSerializer, CustomerSerializer,
     DashboardRecentCustomerSerializer, DashboardRecentSubscriptionSerializer,
     EmployeeSerializer, HomeAddressSerializer, SubscriptionSerializer,
-    CurrentAddressSerializer, WorkAddressSerializer, CustomerEditRequestSerializer
+    CurrentAddressSerializer, WorkAddressSerializer, CustomerEditRequestSerializer,
+    CustomerDeleteRequestSerializer
 )
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -124,7 +125,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Customer.objects.select_related('created_by', 'created_by__user', 'home_address', 'current_address', 'work_address').prefetch_related('subscriptions__chit_plan')
         employee = get_employee(self.request.user)
-        if not employee: return queryset.none()
+        print(f"=== [CUSTOMER QUERYSET] Request User: {self.request.user} (Employee: {employee}) ===")
+        if not employee: 
+            print("=== [CUSTOMER QUERYSET] No employee profile found! Returning empty. ===")
+            return queryset.none()
 
         chit_plan = self.request.query_params.get('chit_plan')
         if chit_plan: queryset = queryset.filter(subscriptions__chit_plan_id=chit_plan)
@@ -135,16 +139,33 @@ class CustomerViewSet(viewsets.ModelViewSet):
         approval_status = self.request.query_params.get('approval_status')
         if approval_status: queryset = queryset.filter(approval_status=approval_status)
 
-        return queryset.distinct()
+        res = queryset.distinct()
+        print(f"=== [CUSTOMER QUERYSET] Total count returned: {res.count()} ===")
+        return res
 
     def perform_create(self, serializer):
+        """Create a new Customer.
+
+        - Admin / Sub‑admin → auto‑approved and editing disabled.
+        - Field Agent (or other employee) → pending approval, editing enabled.
+        """
         employee = get_employee(self.request.user)
-        if is_admin_or_subadmin(self.request.user):
-            serializer.save(created_by=employee, approval_status="Approved", edit_enabled=True)
-        else:
-            serializer.save(created_by=employee, approval_status="Pending", edit_enabled=True)
+        if not employee:
+            raise PermissionDenied("Only employees can create customers.")
+
+        # Determine privileges
+        privileged = employee.role in (Employee.Role.ADMIN, Employee.Role.SUBADMIN)
+        approval_status = "Approved" if privileged else "Pending"
+        edit_enabled = not privileged  # lock after auto‑approval
+
+        serializer.save(
+            created_by=employee,
+            approval_status=approval_status,
+            edit_enabled=edit_enabled,
+        )
     
     def perform_update(self, serializer):
+        """Update a Customer. All authenticated employees can update any customer."""
         serializer.save()
     
     @action(detail=True, methods=['post'])
@@ -355,3 +376,68 @@ class CustomerEditRequestViewSet(viewsets.ModelViewSet):
         edit_request.save()
 
         return Response({"message": "Edit request rejected."})
+
+
+class CustomerDeleteRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = CustomerDeleteRequestSerializer
+    permission_classes = employee_permissions()
+
+    def get_queryset(self):
+        queryset = CustomerDeleteRequest.objects.select_related('customer', 'requested_by')
+        employee = get_employee(self.request.user)
+        if not employee:
+            return queryset.none()
+        if not is_admin_or_subadmin(self.request.user):
+            queryset = queryset.filter(requested_by=employee)
+        
+        customer_id = self.request.query_params.get('customer')
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+            
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+            
+        return queryset
+
+    def perform_create(self, serializer):
+        employee = get_employee(self.request.user)
+        serializer.save(requested_by=employee)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        if not is_admin_or_subadmin(request.user):
+            raise PermissionDenied("Only admins or subadmins can approve delete requests.")
+        
+        delete_request = self.get_object()
+        if delete_request.status != 'Pending':
+            raise PermissionDenied("This request has already been resolved.")
+
+        employee = get_employee(request.user)
+        delete_request.status = 'Approved'
+        delete_request.resolved_by = employee
+        delete_request.resolved_at = timezone.now()
+        delete_request.save()
+
+        # Delete the customer profile
+        customer = delete_request.customer
+        customer.delete()
+
+        return Response({"message": "Delete request approved. Customer deleted successfully."})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        if not is_admin_or_subadmin(request.user):
+            raise PermissionDenied("Only admins or subadmins can reject delete requests.")
+        
+        delete_request = self.get_object()
+        if delete_request.status != 'Pending':
+            raise PermissionDenied("This request has already been resolved.")
+
+        employee = get_employee(request.user)
+        delete_request.status = 'Rejected'
+        delete_request.resolved_by = employee
+        delete_request.resolved_at = timezone.now()
+        delete_request.save()
+
+        return Response({"message": "Delete request rejected."})

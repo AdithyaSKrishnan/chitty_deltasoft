@@ -319,4 +319,46 @@ class CustomerEditRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Request for {self.customer.full_name} by {self.requested_by.employee_id} ({self.status})"
+        return f"Request for {self.customer.full_name} by {self.requested_by.employee_id} ({self.status})"
+
+
+class CustomerDeleteRequest(models.Model):
+    """Tracks deletion requests submitted by Field Agents. Admins approve or reject."""
+
+    class RequestStatus(models.TextChoices):
+        PENDING = 'Pending', 'Pending'
+        APPROVED = 'Approved', 'Approved'
+        REJECTED = 'Rejected', 'Rejected'
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='delete_requests',
+    )
+    requested_by = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='delete_requests_created',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=RequestStatus.choices,
+        default=RequestStatus.PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    resolved_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='delete_requests_resolved',
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Delete request for {self.customer.full_name} by {self.requested_by.employee_id} ({self.status})"
+

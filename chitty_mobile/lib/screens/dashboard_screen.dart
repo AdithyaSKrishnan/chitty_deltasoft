@@ -12,6 +12,8 @@ import '../services/dashboard_service.dart';
 import '../services/auth_service.dart';
 import 'add_customer/add_customer_step1.dart';
 import 'add_customer/customer_form_data.dart';
+import 'delete_requests_screen.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -26,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   int pendingKycCount = 0;
   List recentSubscriptions = [];
   List pendingEditRequests = [];
+  List pendingDeleteRequests = [];
   bool isLoading = true;
 
   @override
@@ -107,10 +110,12 @@ Future<void> loadDashboard() async {
         await AuthService.getRecentSubscriptions();
 
     final editReqs = await AuthService.getPendingEditRequests();
+    final deleteReqs = await AuthService.getDeleteRequests(status: 'Pending');
 
     setState(() {
       pendingKycCount = count;
       pendingEditRequests = editReqs;
+      pendingDeleteRequests = deleteReqs;
     });
     //print("FINAL COUNT = $pendingKycCount");
   } catch (e) {
@@ -522,6 +527,44 @@ Widget actionCard(
                                 ),
                               );
                             }),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    if (pendingDeleteRequests.isNotEmpty) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 25),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.12),
+                          border: Border.all(color: Colors.red, width: 1.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.delete_sweep, color: Colors.red, size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Pending Delete Requests (${pendingDeleteRequests.length})",
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const DeleteRequestsScreen()),
+                                );
+                                loadDashboard();
+                              },
+                              child: const Text("View All", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
                           ],
                         ),
                       ),

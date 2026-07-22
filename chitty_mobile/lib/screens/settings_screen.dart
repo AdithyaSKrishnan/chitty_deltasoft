@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../services/theme_service.dart';
 import '../widgets/sidebar.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -306,14 +306,10 @@ class _SettingsScreenState
                               ),
 
                               Switch(
-
-                                value: darkMode,
-
-                                activeColor:
-                                    Colors.blue,
-
-                                onChanged: (value) {
-
+                                value: ThemeService.isDark,
+                                activeColor: Colors.blue,
+                                onChanged: (value) async {
+                                  await ThemeService.setDarkMode(value);
                                   setState(() {
                                     darkMode = value;
                                   });

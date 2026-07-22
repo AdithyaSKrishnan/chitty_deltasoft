@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
-    ChitPlan, Customer, Employee, HomeAddress, Subscription, WorkAddress, CurrentAddress, CustomerEditRequest
+    ChitPlan, Customer, Employee, HomeAddress, Subscription, WorkAddress, CurrentAddress, CustomerEditRequest, CustomerDeleteRequest
 )
 from .permissions import get_employee, is_admin_or_subadmin
 
@@ -227,7 +227,6 @@ class CustomerSerializer(serializers.ModelSerializer):
         return customer
 
     def update(self, instance, validated_data):
-        # Validate that unprivileged Agents do not submit patch queries against approved records
         request = self.context.get('request')
         if request and not is_admin_or_subadmin(request.user) and (instance.approval_status == "Approved" and not instance.edit_enabled):
             raise serializers.ValidationError("Approved customer profile updates are locked for field agents.")
@@ -314,3 +313,18 @@ class CustomerEditRequestSerializer(serializers.ModelSerializer):
             'resolved_by', 'resolved_at'
         ]
         read_only_fields = ['requested_by', 'status', 'resolved_by', 'resolved_at']
+
+
+class CustomerDeleteRequestSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.full_name', read_only=True)
+    customer_code = serializers.CharField(source='customer.customer_id', read_only=True)
+    requested_by_name = serializers.CharField(source='requested_by.user.username', read_only=True)
+
+    class Meta:
+        model = CustomerDeleteRequest
+        fields = [
+            'id', 'customer', 'customer_name', 'customer_code',
+            'status', 'created_at', 'requested_by', 'requested_by_name',
+            'resolved_by', 'resolved_at'
+        ]
+        read_only_fields = ['requested_by', 'status', 'resolved_by', 'resolved_at']
