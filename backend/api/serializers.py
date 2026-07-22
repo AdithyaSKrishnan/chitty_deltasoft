@@ -11,10 +11,6 @@ from .permissions import get_employee, is_admin_or_subadmin
 
 User = get_user_model()
 
-def capitalize_name(name):
-    if not name: return name
-    return ' '.join(word[0].upper() + word[1:] if word else '' for word in name.split())
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Intercepts standard login authorization routines to append role tracking properties 
@@ -242,9 +238,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if request and not is_admin_or_subadmin(request.user):
-            instance.approval_status = "Pending"
-            instance.edit_enabled = True
         instance.save()
 
         if home_data:
@@ -278,28 +271,15 @@ class ChitPlanSerializer(serializers.ModelSerializer):
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.full_name', read_only=True)
-    customer_photo = serializers.ImageField(source='customer.customer_photo', read_only=True)
     customer_id_display = serializers.CharField(source='customer.customer_id', read_only=True)
     chit_plan_name = serializers.CharField(source='chit_plan.chit_name', read_only=True)
     chit_plan_code = serializers.CharField(source='chit_plan.plan_code', read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['id', 'customer', 'customer_id_display', 'customer_name', 'customer_photo', 'chit_plan', 'chit_plan_code', 'chit_plan_name', 'payment_status', 'subscription_status', 'joined_date']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if 'customer_name' in data and data['customer_name']:
-            data['customer_name'] = capitalize_name(data['customer_name'])
-        return data
+        fields = ['id', 'customer', 'customer_id_display', 'customer_name', 'chit_plan', 'chit_plan_code', 'chit_plan_name', 'payment_status', 'subscription_status', 'joined_date']
 
     def validate_customer(self, customer):
-        request = self.context.get('request')
-        if not request: return customer
-        employee = get_employee(request.user)
-        if employee and employee.role == Employee.Role.FIELD_AGENT:
-            if customer.created_by_id != employee.id:
-                raise serializers.ValidationError('You can only create subscriptions for your own customers.')
         return customer
 
     def validate_chit_plan(self, chit_plan):
@@ -310,28 +290,15 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class DashboardRecentCustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['id', 'customer_id', 'full_name', 'customer_photo', 'created_at', 'kyc_status']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if 'full_name' in data and data['full_name']:
-            data['full_name'] = capitalize_name(data['full_name'])
-        return data
+        fields = ['id', 'customer_id', 'full_name', 'created_at', 'kyc_status']
 
 class DashboardRecentSubscriptionSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.full_name', read_only=True)
-    customer_photo = serializers.ImageField(source='customer.customer_photo', read_only=True)
     chit_plan_name = serializers.CharField(source='chit_plan.chit_name', read_only=True)
     monthly_payment = serializers.DecimalField(source='chit_plan.monthly_payment', max_digits=12, decimal_places=2, read_only=True)
     class Meta:
         model = Subscription
-        fields = ['id', 'customer_name', 'customer_photo', 'chit_plan_name', 'monthly_payment', 'payment_status']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if 'customer_name' in data and data['customer_name']:
-            data['customer_name'] = capitalize_name(data['customer_name'])
-        return data
+        fields = ['id', 'customer_name', 'chit_plan_name', 'monthly_payment', 'payment_status']
 
 
 class CustomerEditRequestSerializer(serializers.ModelSerializer):
@@ -347,9 +314,3 @@ class CustomerEditRequestSerializer(serializers.ModelSerializer):
             'resolved_by', 'resolved_at'
         ]
         read_only_fields = ['requested_by', 'status', 'resolved_by', 'resolved_at']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if 'customer_name' in data and data['customer_name']:
-            data['customer_name'] = capitalize_name(data['customer_name'])
-        return data

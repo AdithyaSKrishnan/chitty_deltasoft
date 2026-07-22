@@ -4,11 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
+import '../services/theme_service.dart';
 import 'edit_customer_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomerDetailsScreen extends StatefulWidget {
-   final Map customer;
+  final Map customer;
 
   const CustomerDetailsScreen({
     super.key,
@@ -56,7 +56,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
     final success = await AuthService.createEditRequest(
       widget.customer['id'],
-      "Profile modification request",
+      "Profile & KYC modification request",
     );
 
     if (!mounted) return;
@@ -64,6 +64,8 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     setState(() {
       _isLoadingPendingRequest = false;
     });
+
+    final isDark = ThemeService.isDark;
 
     if (success) {
       setState(() {
@@ -73,25 +75,112 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text("Request Submitted", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text(
-            "Your edit permission request has been successfully sent to the administrators and sub-administrators. Please wait for authorization.",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          title: Text(
+            "Request Submitted",
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            "Your edit permission request has been successfully sent to the administrators and sub-administrators. Please wait for authorization before editing or updating KYC documents.",
+            style: TextStyle(
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
+              fontSize: 14,
+            ),
           ),
           actions: [
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               onPressed: () => Navigator.pop(context),
-              child: const Text("Okay"),
+              child: const Text("Okay", style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to submit request")),
+        const SnackBar(content: Text("Failed to submit edit request")),
       );
     }
+  }
+
+  /// Checks edit permission before allowing KYC document updates
+  void _handleUpdateKycTap() {
+    if (_role == 'field_agent' && widget.customer['edit_enabled'] != true) {
+      final isDark = ThemeService.isDark;
+      if (_hasPendingRequest) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            title: Text(
+              "Edit Permission Pending",
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              "Your request for edit permission is currently pending approval by an administrator. Updating KYC is disabled until permission is granted.",
+              style: TextStyle(
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Okay", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            title: Text(
+              "Edit Permission Required",
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              "Edit permission must be granted by an administrator to upload or update KYC documents for this customer. Would you like to request edit permission now?",
+              style: TextStyle(
+                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _submitRequestEdit();
+                },
+                child: const Text("Request Permission", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    _showUpdateKycModal();
   }
 
   String formatDateTime(dynamic val) {
@@ -118,43 +207,63 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     final link = addrData['google_maps_link'];
 
     String urlStr = '';
-    if (lat != null && lng != null && lat.toString().isNotEmpty && lng.toString().isNotEmpty) {
+    if (lat != null && lng != null && lat.toString().isNotEmpty && lat.toString() != '0' && lng.toString() != '0') {
       urlStr = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
     } else if (link != null && link.toString().isNotEmpty) {
       urlStr = link.toString();
     }
 
     if (urlStr.isNotEmpty) {
-      final uri = Uri.parse(urlStr);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      try {
+        final uri = Uri.parse(urlStr);
+        bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched) {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        }
+        if (!launched && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Could not open Google Maps for: $urlStr")),
+          );
+        }
+      } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Could not launch map URL: $urlStr")),
+          SnackBar(content: Text("Error opening maps: $e")),
         );
       }
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No GPS coordinates or Google Maps location saved for this address.")),
+      );
     }
   }
 
   Widget _buildEmbeddedMapCard(Map? addrData, String label) {
-    if (addrData == null) return const SizedBox.shrink();
+    final isDark = ThemeService.isDark;
+    final textSecondary = isDark ? Colors.white70 : const Color(0xFF475569);
 
-    final latVal = double.tryParse(addrData['latitude']?.toString() ?? '');
-    final lngVal = double.tryParse(addrData['longitude']?.toString() ?? '');
+    final latVal = double.tryParse(addrData?['latitude']?.toString() ?? '');
+    final lngVal = double.tryParse(addrData?['longitude']?.toString() ?? '');
 
-    if (latVal == null || lngVal == null || (latVal == 0 && lngVal == 0)) {
-      return const SizedBox.shrink();
-    }
-
-    final pos = LatLng(latVal, lngVal);
+    final hasCoords = latVal != null && lngVal != null && (latVal != 0 || lngVal != 0);
+    final pos = hasCoords ? LatLng(latVal!, lngVal!) : const LatLng(8.8932, 76.6141);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
+        Text(
+          "$label Map",
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
         SizedBox(
-          height: 240,
+          height: 200,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: GoogleMap(
@@ -168,8 +277,13 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                   position: pos,
                 ),
               },
-              myLocationButtonEnabled: false,
+              onTap: null, // Read-only in view mode: location cannot be changed
+              scrollGesturesEnabled: false, // Read-only: cannot pan/drag to move location pin
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              zoomGesturesEnabled: true,
               zoomControlsEnabled: true,
+              myLocationButtonEnabled: false,
             ),
           ),
         ),
@@ -177,7 +291,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF111827),
+            color: isDark ? const Color(0xFF111827) : const Color(0xFFE2E8F0),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -185,15 +299,27 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  "Lat: ${latVal.toStringAsFixed(6)}, Lng: ${lngVal.toStringAsFixed(6)}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  hasCoords
+                      ? "Lat: ${pos.latitude.toStringAsFixed(6)}, Lng: ${pos.longitude.toStringAsFixed(6)}"
+                      : "Location Pin (Default)",
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : const Color(0xFF334155),
+                    fontSize: 12,
+                  ),
                 ),
               ),
-              TextButton.icon(
-                onPressed: () => _openMapLocation(addrData),
-                icon: const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
-                label: const Text("Open Maps", style: TextStyle(color: Colors.blue, fontSize: 12)),
-              ),
+              if (addrData != null)
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => _openMapLocation(addrData),
+                  icon: const Icon(Icons.map_outlined, size: 16),
+                  label: const Text("Open in Google Maps", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
             ],
           ),
         ),
@@ -206,11 +332,12 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
     File? newAddressProof;
     File? newIdProof;
     bool isUploading = false;
+    final isDark = ThemeService.isDark;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -230,6 +357,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
               }
             }
 
+            final cardBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+            final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+            final subColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
@@ -242,55 +373,98 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Upload / Update KYC Documents",
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Upload / Update KYC Documents",
+                          style: TextStyle(
+                            color: titleColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: titleColor),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 15),
 
                     // Customer Photo Picker
-                    ListTile(
-                      leading: Icon(Icons.person, color: newPhoto != null ? Colors.green : Colors.blue),
-                      title: Text(
-                        newPhoto != null ? "Customer Photo Selected" : "Customer Photo",
-                        style: const TextStyle(color: Colors.white),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      subtitle: Text(
-                        newPhoto != null ? newPhoto!.path.split('/').last : "Tap to choose image",
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.person,
+                          color: newPhoto != null ? Colors.green : Colors.blue,
+                        ),
+                        title: Text(
+                          newPhoto != null ? "Customer Photo Selected" : "Customer Photo",
+                          style: TextStyle(color: titleColor, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          newPhoto != null ? newPhoto!.path.split('/').last : "Tap to choose image",
+                          style: TextStyle(color: subColor, fontSize: 12),
+                        ),
+                        onTap: () => pickImg('photo'),
+                        trailing: const Icon(Icons.upload_file, color: Colors.blue),
                       ),
-                      onTap: () => pickImg('photo'),
-                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
                     ),
 
                     // Address Proof Picker
-                    ListTile(
-                      leading: Icon(Icons.home, color: newAddressProof != null ? Colors.green : Colors.blue),
-                      title: Text(
-                        newAddressProof != null ? "Address Proof Selected" : "Address Proof Document",
-                        style: const TextStyle(color: Colors.white),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      subtitle: Text(
-                        newAddressProof != null ? newAddressProof!.path.split('/').last : "Tap to choose image",
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.home,
+                          color: newAddressProof != null ? Colors.green : Colors.blue,
+                        ),
+                        title: Text(
+                          newAddressProof != null ? "Address Proof Selected" : "Address Proof Document",
+                          style: TextStyle(color: titleColor, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          newAddressProof != null ? newAddressProof!.path.split('/').last : "Tap to choose image",
+                          style: TextStyle(color: subColor, fontSize: 12),
+                        ),
+                        onTap: () => pickImg('address'),
+                        trailing: const Icon(Icons.upload_file, color: Colors.blue),
                       ),
-                      onTap: () => pickImg('address'),
-                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
                     ),
 
                     // ID Proof Picker
-                    ListTile(
-                      leading: Icon(Icons.badge, color: newIdProof != null ? Colors.green : Colors.blue),
-                      title: Text(
-                        newIdProof != null ? "ID Proof Selected" : "ID Proof Document",
-                        style: const TextStyle(color: Colors.white),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      subtitle: Text(
-                        newIdProof != null ? newIdProof!.path.split('/').last : "Tap to choose image",
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.badge,
+                          color: newIdProof != null ? Colors.green : Colors.blue,
+                        ),
+                        title: Text(
+                          newIdProof != null ? "ID Proof Selected" : "ID Proof Document",
+                          style: TextStyle(color: titleColor, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          newIdProof != null ? newIdProof!.path.split('/').last : "Tap to choose image",
+                          style: TextStyle(color: subColor, fontSize: 12),
+                        ),
+                        onTap: () => pickImg('id'),
+                        trailing: const Icon(Icons.upload_file, color: Colors.blue),
                       ),
-                      onTap: () => pickImg('id'),
-                      trailing: const Icon(Icons.upload_file, color: Colors.blue),
                     ),
 
                     const SizedBox(height: 20),
@@ -299,7 +473,12 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         onPressed: isUploading
                             ? null
                             : () async {
@@ -337,7 +516,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                               },
                         child: isUploading
                             ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text("Submit KYC Update", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            : const Text(
+                                "Submit KYC Update",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
                       ),
                     ),
                   ],
@@ -353,22 +535,38 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final customer = widget.customer;
-    print("DETAIL CUSTOMER DATA:");
+    final isDark = ThemeService.isDark;
+
+    final bgColor = isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? Colors.white70 : const Color(0xFF475569);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF020617),
-
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF020617),
-
-        title: const Text(
-          'Customer Details ',
+        backgroundColor: bgColor,
+        iconTheme: IconThemeData(color: textPrimary),
+        title: Text(
+          'Customer Details',
           style: TextStyle(
-            color: Colors.white,
+            color: textPrimary,
+            fontWeight: FontWeight.bold,
           ),
         ),
-
         actions: [
+          // Theme Toggle Button
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode : Icons.dark_mode,
+              color: isDark ? Colors.amber : Colors.indigo,
+            ),
+            tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
+            onPressed: () async {
+              await ThemeService.toggleTheme();
+              setState(() {});
+            },
+          ),
           if (_role == 'admin' || _role == 'subadmin') ...[
             if (customer['approval_status'] != 'Approved')
               IconButton(
@@ -383,11 +581,14 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
 
                   if (success) {
                     if (!mounted) return;
+                    setState(() {
+                      customer['approval_status'] = 'Approved';
+                      customer['edit_enabled'] = false;
+                      _hasPendingRequest = false;
+                    });
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          "Customer Approved",
-                        ),
+                        content: Text("Customer Approved"),
                       ),
                     );
 
@@ -482,16 +683,18 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                    title: const Text("Delete Customer"),
-                    content: const Text(
+                    backgroundColor: cardBg,
+                    title: Text("Delete Customer", style: TextStyle(color: textPrimary)),
+                    content: Text(
                       "Are you sure you want to delete this customer?",
+                      style: TextStyle(color: textSecondary),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context, false);
                         },
-                        child: const Text("Cancel"),
+                        child: Text("Cancel", style: TextStyle(color: textSecondary)),
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -500,7 +703,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                         onPressed: () {
                           Navigator.pop(context, true);
                         },
-                        child: const Text("Delete"),
+                        child: const Text("Delete", style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   );
@@ -534,10 +737,8 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
           ),
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
-
         child: ListView(
           children: [
             if ((_role == 'admin' || _role == 'subadmin') && _hasPendingRequest) ...[
@@ -556,10 +757,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Field Agent Requested Edit Access", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                          SizedBox(height: 2),
-                          Text("Agent needs permission to modify profile data", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        children: [
+                          Text("Field Agent Requested Edit Access", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 2),
+                          Text("Agent needs permission to modify profile data & KYC", style: TextStyle(color: textSecondary, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -611,9 +812,9 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       "This customer was onboarded by an agent and requires your approval.",
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                      style: TextStyle(color: textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -639,6 +840,11 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                           final success = await AuthService.approveCustomer(customer['id']);
                           if (success) {
                             if (!mounted) return;
+                            setState(() {
+                              customer['approval_status'] = 'Approved';
+                              customer['edit_enabled'] = false;
+                              _hasPendingRequest = false;
+                            });
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Customer Onboarding Approved!")),
                             );
@@ -651,7 +857,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                 ),
               ),
             ],
-            if (customer['is_edit_unlocked'] == true) ...[
+            if (customer['edit_enabled'] == true) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 12),
@@ -674,7 +880,7 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             TextSpan(
-                              text: "Admin has unlocked this customer profile. You can now edit and update the details.",
+                              text: "Admin has unlocked this customer profile. You can edit profile and update KYC documents.",
                             ),
                           ],
                         ),
@@ -685,62 +891,23 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
               ),
             ],
 
-            buildTile(
-              'Customer ID',
-              customer['customer_id'] ?? '-',
-            ),
-
-            buildTile(
-              'Full Name',
-              customer['full_name'] ?? '-',
-            ),
-
-            buildTile(
-              'Mobile',
-              customer['mobile_number'] ?? '-',
-            ),
-
-            buildTile(
-              'Alternate Number',
-              customer['alternate_number'] ?? '-',
-            ),
-
-            buildTile(
-              'Email',
-              customer['email'] ?? '-',
-            ),
-            buildTile(
-  'Customer Type',
-  customer['customer_type'] ?? '-',
-),
-buildTile(
-  'Approval Status',
-  customer['approval_status'] ?? '-',
-),
-
-buildTile(
-  'Edit Status',
-  customer['edit_enabled'] == true
-      ? 'Enabled'
-      : 'Disabled',
-),
-
-            buildTile(
-              'Date Added',
-              formatDateTime(customer['created_at']),
-            ),
-
-            buildTile(
-              'Last Modified',
-              formatDateTime(customer['updated_at'] ?? customer['created_at']),
-            ),
+            buildTile('Customer ID', customer['customer_id'] ?? '-'),
+            buildTile('Full Name', customer['full_name'] ?? '-'),
+            buildTile('Mobile', customer['mobile_number'] ?? '-'),
+            buildTile('Alternate Number', customer['alternate_number'] ?? '-'),
+            buildTile('Email', customer['email'] ?? '-'),
+            buildTile('Customer Type', customer['customer_type'] ?? '-'),
+            buildTile('Approval Status', customer['approval_status'] ?? '-'),
+            buildTile('Edit Status', customer['edit_enabled'] == true ? 'Enabled' : 'Disabled'),
+            buildTile('Date Added', formatDateTime(customer['created_at'])),
+            buildTile('Last Modified', formatDateTime(customer['updated_at'] ?? customer['created_at'])),
 
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'Home Address',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -758,10 +925,10 @@ buildTile(
 
             const SizedBox(height: 25),
 
-            const Text(
+            Text(
               'Current Address',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -781,10 +948,10 @@ buildTile(
 
             const SizedBox(height: 25),
 
-            const Text(
+            Text(
               'Work Address',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
@@ -801,150 +968,132 @@ buildTile(
             buildTile('Pincode', customer['work_address']?['pincode'] ?? '-'),
 
             _buildEmbeddedMapCard(customer['work_address'], 'Work Location'),
-const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    const Text(
-      'KYC Documents',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    ElevatedButton.icon(
-      onPressed: _showUpdateKycModal,
-      icon: const Icon(Icons.upload_file, size: 18, color: Colors.white),
-      label: const Text("Update KYC", style: TextStyle(color: Colors.white, fontSize: 13)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    ),
-  ],
-),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'KYC Documents',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _handleUpdateKycTap,
+                  icon: const Icon(Icons.upload_file, size: 18, color: Colors.white),
+                  label: const Text("Update KYC", style: TextStyle(color: Colors.white, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
 
-const SizedBox(height: 15),
+            const SizedBox(height: 15),
 
-if (customer['customer_photo'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'Customer Photo',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['customer_photo'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
+            if (customer['customer_photo'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('Customer Photo', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['customer_photo'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
 
-if (customer['address_proof'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'Address Proof',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['address_proof'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
+            if (customer['address_proof'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('Address Proof', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['address_proof'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
 
-if (customer['id_proof'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'ID Proof',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['id_proof'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
-  if (customer['home_address']?['address_photo'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'Home Address Proof',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['home_address']['address_photo'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
-  if (customer['current_address']?['address_photo'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'Current Address Proof',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['current_address']['address_photo'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
-  if (customer['work_address']?['address_photo'] != null)
-  Card(
-    color: const Color(0xFF1E293B),
-    child: Column(
-      children: [
-        const SizedBox(height: 10),
-        const Text(
-          'Work Address Proof',
-          style: TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        Image.network(
-          customer['work_address']['address_photo'],
-          height: 250,
-        ),
-        const SizedBox(height: 10),
-      ],
-    ),
-  ),
+            if (customer['id_proof'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('ID Proof', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['id_proof'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            if (customer['home_address']?['address_photo'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('Home Address Proof', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['home_address']['address_photo'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            if (customer['current_address']?['address_photo'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('Current Address Proof', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['current_address']['address_photo'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            if (customer['work_address']?['address_photo'] != null)
+              Card(
+                color: cardBg,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text('Work Address Proof', style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Image.network(
+                      customer['work_address']['address_photo'],
+                      height: 250,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -955,26 +1104,29 @@ if (customer['id_proof'] != null)
     String title,
     dynamic value,
   ) {
+    final isDark = ThemeService.isDark;
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? Colors.white70 : const Color(0xFF475569);
+
     final strVal = (value == null || value.toString().trim().isEmpty) ? '-' : value.toString();
     return Card(
-      color: const Color(0xFF1E293B),
-
+      color: cardBg,
       child: ListTile(
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: textSecondary,
           ),
         ),
-
         subtitle: Text(
           strVal,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textPrimary,
             fontSize: 16,
           ),
         ),
       ),
     );
   }
-}
+}

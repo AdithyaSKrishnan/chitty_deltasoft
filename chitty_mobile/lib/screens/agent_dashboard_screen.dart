@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'agent_subscriptions_screen.dart';
 import 'customers_screen.dart';
+import 'customer_details_screen.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -43,7 +44,7 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
     final allCustomers = await AuthService.getCustomers();
 
     List<dynamic> customersList = data['recent_customers'] as List? ?? [];
-    if (customersList.isEmpty) {
+    if (customersList.length < allCustomers.length) {
       customersList = allCustomers;
     }
 
@@ -79,7 +80,7 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
 
   drawer: mobile
       ? Drawer(
-          child: Container(
+          child: Material(
             color: const Color(0xFF081028),
             child: Column(
               children: [
@@ -402,36 +403,74 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
 
                     const SizedBox(height: 35),
 
-                    /// RECENT CUSTOMERS
-                    sectionTitle(
-                      'Recent Customers',
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Customer Directory (${recentCustomers.length})',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: mobile ? 20 : 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CustomersScreen()),
+                            );
+                            loadDashboard();
+                          },
+                          icon: const Icon(Icons.arrow_forward, color: Colors.blue, size: 16),
+                          label: const Text("View All", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 20),
 
                     tableContainer(
-
                       child: Column(
-
                         children: [
-
                           tableRow(
-  true,
-  'Customer',
-  'Phone',
-  'Plan',
-  '',
-),
-
+                            true,
+                            'Customer Name',
+                            'Phone / ID',
+                            'Status',
+                            'Action',
+                          ),
                           ...recentCustomers.map(
-  (customer) => tableRow(
-    false,
-    customer['name'] ?? '',
-    customer['phone'] ?? '',
-    customer['plan'] ?? '',
-    '',
-  ),
-),
+                            (customer) => InkWell(
+                              onTap: () async {
+                                final refresh = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CustomerDetailsScreen(customer: customer),
+                                  ),
+                                );
+                                if (refresh == true) {
+                                  loadDashboard();
+                                }
+                              },
+                              child: tableRow(
+                                false,
+                                (customer['full_name'] ?? customer['name'] ?? '').toString(),
+                                "${customer['mobile_number'] ?? customer['phone'] ?? ''}",
+                                (customer['approval_status'] ?? 'Approved').toString(),
+                                'View / Edit ➔',
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

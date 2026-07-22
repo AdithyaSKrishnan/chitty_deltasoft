@@ -65,8 +65,8 @@ class IsAdminOrOwnCustomer(BasePermission):
             return True
         
         employee = get_employee(request.user)
-        if employee is not None and obj.created_by_id == employee.id:
-            # Post-approval fallback lockout validation rules for Agents
+        if employee is not None:
+            # Allows field agents to view and edit any customer when edit permission is unlocked
             if request.method not in SAFE_METHODS and (obj.approval_status == "Approved" and not obj.edit_enabled):
                 return False
             return True
@@ -83,7 +83,7 @@ class IsAdminOrOwnCustomerAddress(BasePermission):
         if is_admin_or_subadmin(request.user):
             return True
         employee = get_employee(request.user)
-        if employee is not None and obj.customer.created_by_id == employee.id:
+        if employee is not None:
             if request.method not in SAFE_METHODS and (obj.customer.approval_status == "Approved" and not obj.customer.edit_enabled):
                 return False
             return True
@@ -103,4 +103,6 @@ class IsAdminOrOwnCustomerSubscription(BasePermission):
         if is_admin_or_subadmin(request.user):
             return True
         employee = get_employee(request.user)
-        return employee is not None and obj.customer.created_by_id == employee.id
+        if employee is not None:
+            return True
+        return False
