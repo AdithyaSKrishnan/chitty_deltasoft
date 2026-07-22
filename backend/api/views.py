@@ -147,21 +147,19 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """Create a new Customer.
 
         - Admin / Sub‑admin → auto‑approved and editing disabled.
-        - Field Agent (or other employee) → pending approval, editing enabled.
+        - Field Agent → pending approval, editing disabled by default post-creation.
         """
         employee = get_employee(self.request.user)
         if not employee:
             raise PermissionDenied("Only employees can create customers.")
 
-        # Determine privileges
         privileged = employee.role in (Employee.Role.ADMIN, Employee.Role.SUBADMIN)
         approval_status = "Approved" if privileged else "Pending"
-        edit_enabled = not privileged  # lock after auto‑approval
 
         serializer.save(
             created_by=employee,
             approval_status=approval_status,
-            edit_enabled=edit_enabled,
+            edit_enabled=False,  # strictly locked post-creation for all roles
         )
     
     def perform_update(self, serializer):
