@@ -44,13 +44,13 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
     final allCustomers = await AuthService.getCustomers();
 
     List<dynamic> customersList = data['recent_customers'] as List? ?? [];
-    if (customersList.length < allCustomers.length) {
-      customersList = allCustomers;
-    }
+    customersList = customersList.where((c) => c['approval_status'] == 'Approved').toList();
+
+    final approvedCount = allCustomers.where((c) => (c['approval_status'] ?? '').toString() == 'Approved').length;
 
     if (mounted) {
       setState(() {
-        totalCustomers = allCustomers.length;
+        totalCustomers = approvedCount;
         activeSubscriptions = data['active_subscriptions'] ?? 0;
         recentCustomers = customersList;
       });
@@ -441,37 +441,84 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
 
                     tableContainer(
                       child: Column(
-                        children: [
-                          tableRow(
-                            true,
-                            'Customer Name',
-                            'Phone / ID',
-                            'Status',
-                            'Action',
-                          ),
-                          ...recentCustomers.map(
-                            (customer) => InkWell(
-                              onTap: () async {
-                                final refresh = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CustomerDetailsScreen(customer: customer),
+                        children: recentCustomers.map((customer) {
+                          final name = (customer['full_name'] ?? customer['name'] ?? '').toString();
+                          final phone = (customer['mobile_number'] ?? customer['phone'] ?? '').toString();
+                          final custId = (customer['customer_id'] ?? '').toString();
+                          final status = (customer['approval_status'] ?? 'Approved').toString();
+                          final isApproved = status == 'Approved';
+
+                          return InkWell(
+                            onTap: () async {
+                              final refresh = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CustomerDetailsScreen(customer: customer),
+                                ),
+                              );
+                              if (refresh == true) {
+                                loadDashboard();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                              decoration: const BoxDecoration(
+                                border: Border(bottom: BorderSide(color: Colors.white10, width: 0.5)),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: Colors.blue.withOpacity(0.2),
+                                    child: Text(
+                                      name.isNotEmpty ? name[0].toUpperCase() : 'C',
+                                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
                                   ),
-                                );
-                                if (refresh == true) {
-                                  loadDashboard();
-                                }
-                              },
-                              child: tableRow(
-                                false,
-                                (customer['full_name'] ?? customer['name'] ?? '').toString(),
-                                "${customer['mobile_number'] ?? customer['phone'] ?? ''}",
-                                (customer['approval_status'] ?? 'Approved').toString(),
-                                'View / Edit ➔',
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          phone.isNotEmpty ? phone : custId,
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.visibility,
+                                      color: Colors.blue,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          );
+                        }).toList(),
                       ),
                     ),
 
@@ -728,7 +775,23 @@ class _AgentDashboardScreenState extends State<AgentDashboardScreen> with Widget
           ),
 
           Expanded(
-            child: Text(c4, style: style),
+            child: header
+                ? Text(c4, style: style)
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.visibility,
+                        color: Colors.blue,
+                        size: 18,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

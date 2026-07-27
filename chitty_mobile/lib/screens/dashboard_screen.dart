@@ -13,6 +13,7 @@ import '../services/auth_service.dart';
 import 'add_customer/add_customer_step1.dart';
 import 'add_customer/customer_form_data.dart';
 import 'delete_requests_screen.dart';
+import 'customer_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -57,17 +58,19 @@ Future<void> loadStats() async {
   try {
     final data = await DashboardService.getStats();
     final customersList = await AuthService.getCustomers();
+    final approvedCount = customersList.where((c) => (c['approval_status'] ?? '').toString() == 'Approved').length;
     if (!mounted) return;
     setState(() {
       stats = data;
-      stats!['total_customers'] = customersList.length;
+      stats!['total_customers'] = approvedCount;
       isLoading = false;
     });
   } catch (e) {
     final customersList = await AuthService.getCustomers();
+    final approvedCount = customersList.where((c) => (c['approval_status'] ?? '').toString() == 'Approved').length;
     if (!mounted) return;
     setState(() {
-      stats = {'total_customers': customersList.length};
+      stats = {'total_customers': approvedCount};
       isLoading = false;
     });
   }
@@ -76,52 +79,26 @@ Future<void> loadDashboard() async {
   print("LOAD DASHBOARD CALLED");
 
   try {
+    recentCustomers = await AuthService.getRecentCustomers();
+    recentSubscriptions = await AuthService.getRecentSubscriptions();
 
-    recentCustomers =
-        await AuthService.getRecentCustomers();
-    print(recentCustomers.first.keys);
-
-    print('Customers loaded');
-    for (var customer in recentCustomers) {
-      print(customer);
-}
-
-    final count = recentCustomers.where((customer) {
-
-  final status =
-      customer['kyc_status']
-          ?.toString()
-          .trim()
-          .toLowerCase();
-
-  print(
-    "${customer['full_name']} => '$status'"
-  );
-
-  return status == 'pending';
-
-}).length;
-
-    print("==========");
-    print("final count = $count");
-    print("==========");
-
-    recentSubscriptions =
-        await AuthService.getRecentSubscriptions();
+    final allCustomers = await AuthService.getCustomers();
+    final count = allCustomers.where((customer) {
+      final status = (customer['approval_status'] ?? '').toString().trim().toLowerCase();
+      return status == 'pending';
+    }).length;
 
     final editReqs = await AuthService.getPendingEditRequests();
     final deleteReqs = await AuthService.getDeleteRequests(status: 'Pending');
 
+    if (!mounted) return;
     setState(() {
       pendingKycCount = count;
       pendingEditRequests = editReqs;
       pendingDeleteRequests = deleteReqs;
     });
-    //print("FINAL COUNT = $pendingKycCount");
   } catch (e) {
-
     print(e);
-
   }
 }
 Widget actionCard(
@@ -180,67 +157,80 @@ Widget actionCard(
     ),
   );
 }
-  Widget customerTile(
-    String name,
-    String? photoUrl,
-    String id,
-    String amount,
-  ) {
+  Widget customerTile(Map<String, dynamic> customer) {
+    final name = (customer['full_name'] ?? customer['name'] ?? '').toString();
+    final phone = (customer['mobile_number'] ?? customer['phone'] ?? '').toString();
+    final custId = (customer['customer_id'] ?? '').toString();
 
-    return Container(
-
-      margin: const EdgeInsets.only(bottom: 16),
-
-      child: Row(
-
-        children: [
-
-          CircleAvatar(
-            backgroundColor: Colors.blue,
-            backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                ? NetworkImage(photoUrl)
-                : null,
-            child: (photoUrl == null || photoUrl.isEmpty)
-                ? Text(
-                    name.split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join(),
-                    style: const TextStyle(color: Colors.white),
-                  )
-                : null,
+    return InkWell(
+      onTap: () async {
+        final refresh = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CustomerDetailsScreen(customer: customer),
           ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                Text(
-                  id,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
+        );
+        if (refresh == true) {
+          loadStats();
+          loadDashboard();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.white10, width: 0.5)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.blue.withOpacity(0.2),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'C',
+                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
-          ),
-
-          Text(
-            amount,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    phone.isNotEmpty ? phone : custId,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.visibility,
+                color: Colors.blue,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -397,15 +387,34 @@ Widget actionCard(
             color: Colors.white,
             size: 30,
           ),
-          onPressed: () {showDialog(
+          onPressed: () {
+            showDialog(
               context: context,
               builder: (_) => AlertDialog(
-                title: const Text('Pending KYC'),
-                content: Text(
-                  '$pendingKycCount customer(s) have pending KYC',
+                backgroundColor: const Color(0xFF0F172A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.blue, width: 1),
                 ),
+                title: const Text(
+                  'Profile Verification',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                content: Text(
+                  pendingKycCount == 1
+                      ? '1 customer needs to get their profile verified.'
+                      : '$pendingKycCount customer(s) need to get their profile verified.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
-            );},
+            );
+          },
         ),
 
         if (pendingKycCount > 0)
@@ -708,14 +717,7 @@ Widget actionCard(
                                 title: 'Recent Customers',
 
                                 child: Column(
-  children: recentCustomers.map<Widget>((customer) {
-    return customerTile(
-      customer['full_name'] ?? '',
-      customer['customer_photo'],
-      customer['customer_id'] ?? '',
-      '',
-    );
-  }).toList(),
+  children: recentCustomers.map<Widget>((customer) => customerTile(customer)).toList(),
 ),
                               ),
 
@@ -755,14 +757,7 @@ Widget actionCard(
                                   title: 'Recent Customers',
 
                                   child: Column(
-  children: recentCustomers.map<Widget>((customer) {
-    return customerTile(
-      customer['full_name'] ?? '',
-      customer['customer_photo'],
-      customer['customer_id'] ?? '',
-      '',
-    );
-  }).toList(),
+  children: recentCustomers.map<Widget>((customer) => customerTile(customer)).toList(),
 ),
                                 ),
                               ),

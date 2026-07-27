@@ -73,7 +73,7 @@ class DashboardStatsAPIView(APIView):
         recent_onboardings = customers_qs.filter(created_at__gte=seven_days_ago).count()
 
         return Response({
-            'total_customers': customers_qs.count(),
+            'total_customers': customers_qs.filter(approval_status='Approved').count(),
             'active_subscriptions': active_subscriptions_qs.count(),
             'monthly_collections_total': float(monthly_collections),
             'pending_payments': pending_payments,
@@ -85,8 +85,8 @@ class DashboardRecentCustomersAPIView(APIView):
     permission_classes = employee_permissions(IsAdminOrFieldAgent)
 
     def get(self, request):
-        customers = _scoped_customers_queryset(request.user).order_by('-created_at')[:5]
-        serializer = DashboardRecentCustomerSerializer(customers, many=True)
+        customers = _scoped_customers_queryset(request.user).filter(approval_status='Approved').order_by('-created_at')[:5]
+        serializer = CustomerSerializer(customers, many=True, context={'request': request})
         return Response(serializer.data)
 
 class DashboardRecentSubscriptionsAPIView(APIView):
@@ -147,7 +147,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """Create a new Customer.
 
         - Admin / Sub‑admin → auto‑approved and editing disabled.
-        - Field Agent → pending approval, editing disabled by default post-creation.
+        - Field Agent → pending approval, editing enabled (edit_enabled=True) during pending onboarding.
         """
         employee = get_employee(self.request.user)
         if not employee:
@@ -155,11 +155,12 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         privileged = employee.role in (Employee.Role.ADMIN, Employee.Role.SUBADMIN)
         approval_status = "Approved" if privileged else "Pending"
+        edit_enabled = not privileged  # True while onboarding/pending, False if auto-approved by admin
 
         serializer.save(
             created_by=employee,
             approval_status=approval_status,
-            edit_enabled=False,  # strictly locked post-creation for all roles
+            edit_enabled=edit_enabled,
         )
     
     def perform_update(self, serializer):
@@ -284,20 +285,21 @@ class AgentDashboardAPIView(APIView):
 
     def get(self, request):
         employee = Employee.objects.get(user=request.user)
-        customers = Customer.objects.all().select_related(
+        all_customers = Customer.objects.all()
+        approved_customers = Customer.objects.filter(approval_status='Approved').select_related(
             'created_by', 'created_by__user', 'home_address', 'current_address', 'work_address'
-        ).prefetch_related('subscriptions__chit_plan')
+        ).prefetch_related('subscriptions__chit_plan').order_by('-created_at')[:5]
 
         subscriptions = Subscription.objects.filter(
             subscription_status='active',
         )
 
-        all_customers_data = CustomerSerializer(customers, many=True, context={'request': request}).data
+        recent_customers_data = CustomerSerializer(approved_customers, many=True, context={'request': request}).data
 
         return Response({
-            'total_customers': customers.count(),
+            'total_customers': all_customers.filter(approval_status='Approved').count(),
             'active_subscriptions': subscriptions.count(),
-            'recent_customers': all_customers_data,
+            'recent_customers': recent_customers_data,
         })
 
 
@@ -327,7 +329,7 @@ class CustomerEditRequestViewSet(viewsets.ModelViewSet):
         employee = get_employee(self.request.user)
         customer = serializer.validated_data['customer']
         
-        if customer.approval_status != "Approved" or customer.edit_enabled:
+        if customer.edit_enabled:
             raise PermissionDenied("This customer profile is not locked. No edit request is necessary.")
             
         existing_pending = CustomerEditRequest.objects.filter(customer=customer, status='Pending').exists()

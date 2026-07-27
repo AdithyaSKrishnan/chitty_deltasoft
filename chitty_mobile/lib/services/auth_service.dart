@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  // 🟢 LIVE PRODUCTION SERVER
+  // 🌐 PRODUCTION SERVER
   static const String baseUrl = 'https://chittyapi.orianacare.com/api';
 
   /// Connection timeout duration — prevents hanging on slow/bad networks
@@ -186,6 +186,21 @@ class AuthService {
       return jsonDecode(response.body);
     }
     return [];
+  }
+
+  static Future<Map<String, dynamic>?> getCustomerById(int customerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
+    final response = await _safeGet(
+      '$baseUrl/customers/$customerId/',
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response != null && response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    return null;
   }
 
   static Future<Map<String, dynamic>?> createCustomer({

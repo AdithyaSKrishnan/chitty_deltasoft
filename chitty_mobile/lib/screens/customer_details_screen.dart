@@ -23,29 +23,52 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
   String _role = '';
   bool _hasPendingRequest = false;
   bool _isLoadingPendingRequest = true;
+  late Map customer;
 
   @override
   void initState() {
     super.initState();
+    customer = Map.from(widget.customer);
     _loadData();
   }
 
   Future<void> _loadData() async {
     final role = await AuthService.getRole() ?? '';
+
+    try {
+      final custId = customer['id'];
+      if (custId != null) {
+        final fullCust = await AuthService.getCustomerById(custId);
+        if (fullCust != null && mounted) {
+          setState(() {
+            customer = fullCust;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching customer by id: $e");
+    }
+
+    if (!mounted) return;
+
     setState(() {
       _role = role;
     });
 
     if (role == 'field_agent') {
-      final hasPending = await AuthService.hasPendingEditRequest(widget.customer['id']);
-      setState(() {
-        _hasPendingRequest = hasPending;
-        _isLoadingPendingRequest = false;
-      });
+      final hasPending = await AuthService.hasPendingEditRequest(customer['id']);
+      if (mounted) {
+        setState(() {
+          _hasPendingRequest = hasPending;
+          _isLoadingPendingRequest = false;
+        });
+      }
     } else {
-      setState(() {
-        _isLoadingPendingRequest = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingPendingRequest = false;
+        });
+      }
     }
   }
 
@@ -496,54 +519,29 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
             },
           ),
           if (_role == 'admin' || _role == 'subadmin') ...[
-            if (customer['approval_status'] != 'Approved')
-              IconButton(
-                icon: const Icon(
-                  Icons.verified,
-                  color: Colors.green,
+            if (customer['edit_enabled'] == true)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                icon: const Icon(Icons.verified, color: Colors.white, size: 18),
+                label: const Text("Verified", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                 onPressed: () async {
-                  final success = await AuthService.approveCustomer(
-                    customer['id'],
-                  );
-
+                  final success = await AuthService.toggleCustomerEditPermission(customer['id'], false);
                   if (success) {
-                    if (!mounted) return;
                     setState(() {
-                      customer['approval_status'] = 'Approved';
                       customer['edit_enabled'] = false;
                       _hasPendingRequest = false;
                     });
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Customer Approved"),
-                      ),
+                      const SnackBar(content: Text("Profile Verified & Locked")),
                     );
-
-                    Navigator.pop(context, true);
                   }
                 },
               ),
-            IconButton(
-              icon: Icon(
-                customer['edit_enabled'] == true ? Icons.lock_open : Icons.lock,
-                color: customer['edit_enabled'] == true ? Colors.green : Colors.orange,
-              ),
-              tooltip: customer['edit_enabled'] == true ? "Lock Agent Edit" : "Unlock Agent Edit",
-              onPressed: () async {
-                final newStatus = !(customer['edit_enabled'] == true);
-                final success = await AuthService.toggleCustomerEditPermission(customer['id'], newStatus);
-                if (success) {
-                  setState(() {
-                    customer['edit_enabled'] = newStatus;
-                  });
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(newStatus ? "Agent Editing Unlocked" : "Agent Editing Locked")),
-                  );
-                }
-              },
-            ),
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
               onPressed: () async {
@@ -692,8 +690,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                         ],
                       ),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                      icon: const Icon(Icons.verified, color: Colors.white, size: 16),
+                      label: const Text("Approve Edit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       onPressed: () async {
                         final success = await AuthService.toggleCustomerEditPermission(customer['id'], true);
                         if (success) {
@@ -703,11 +703,10 @@ class _CustomerDetailsScreenState extends State<CustomerDetailsScreen> {
                           });
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Approved! Agent editing unlocked.")),
+                            const SnackBar(content: Text("Edit Request Approved! Agent editing unlocked.")),
                           );
                         }
                       },
-                      child: const Text("Unlock", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
