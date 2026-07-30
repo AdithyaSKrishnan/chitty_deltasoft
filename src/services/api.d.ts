@@ -23,6 +23,7 @@ export function createCustomerWithDetails(data: {
     email?: string;
   };
   homeAddress: Record<string, unknown>;
+  currentAddress?: Record<string, unknown> | null;
   workAddress?: Record<string, unknown> | null;
   photos?: Record<string, string>;
   subscription?: { chitPlanId: string; joinedDate?: string } | null;

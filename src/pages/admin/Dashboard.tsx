@@ -55,14 +55,12 @@ export default function Dashboard() {
   const [resolvingIds, setResolvingIds] = useState<string[]>([]);
   
   const [pendingConfirmations, setPendingConfirmations] = useState<Customer[]>([]);
-  const [isLoadingConfirmations, setIsLoadingConfirmations] = useState(true);
   const [confirmationsError, setConfirmationsError] = useState('');
   const [confirmingIds, setConfirmingIds] = useState<string[]>([]);
   
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
   
   const [statsError, setStatsError] = useState('');
   const [customersError, setCustomersError] = useState('');
@@ -109,15 +107,12 @@ export default function Dashboard() {
   }, []);
 
   const loadEditRequests = useCallback(async () => {
-    setIsLoadingRequests(true);
     setRequestsError('');
     try {
       const data = await fetchCustomerEditRequests({ status: 'Pending' });
       setEditRequests(data);
     } catch (err) {
       setRequestsError(mapApiError(err));
-    } finally {
-      setIsLoadingRequests(false);
     }
   }, []);
 
@@ -149,15 +144,12 @@ export default function Dashboard() {
   };
 
   const loadConfirmations = useCallback(async () => {
-    setIsLoadingConfirmations(true);
     setConfirmationsError('');
     try {
       const data = await fetchCustomers({ approval_status: 'Pending' });
       setPendingConfirmations(data.filter((c: any) => c.isEditUnlocked));
     } catch (err) {
       setConfirmationsError(mapApiError(err));
-    } finally {
-      setIsLoadingConfirmations(false);
     }
   }, []);
 

@@ -89,6 +89,7 @@ export default function EditCustomerPage() {
   const [existingChitPlanId, setExistingChitPlanId] = useState('');
   const [addCurrentAddress, setAddCurrentAddress] = useState(false);
   const [addWorkAddress, setAddWorkAddress] = useState(false);
+  const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 
   useEffect(() => {
     if (!id) return;

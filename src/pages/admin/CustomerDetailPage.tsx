@@ -67,6 +67,33 @@ export default function CustomerDetailPage() {
         }
       />
       
+      {/* Pending Onboarding Approval Banner */}
+      {(user?.role === 'admin' || user?.role === 'subadmin') && customer.approvalStatus !== 'Approved' && (
+        <Card className="border-amber-400/50 bg-amber-500/10 dark:bg-amber-950/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Clock className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-amber-600 dark:text-amber-400 text-base">
+                  Pending Onboarding Approval
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                  This customer was onboarded by an agent and requires your approval.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              onClick={handleApprove}
+              icon={<CheckCircle className="w-5 h-5" />}
+              className="bg-green-600 hover:bg-green-700 text-white shrink-0 px-5 py-2.5"
+            >
+              Approve Customer Onboarding
+            </Button>
+          </div>
+        </Card>
+      )}
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
@@ -173,9 +200,9 @@ export default function CustomerDetailPage() {
                   <MapPin className="w-5 h-5 text-primary-500" />
                   <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Current Address</h2>
                 </div>
-                {customer.currentAddress.mapUrl && (
+                {customer.currentAddress?.mapUrl && (
                   <button
-                    onClick={() => window.open(customer.currentAddress.mapUrl, '_blank')}
+                    onClick={() => window.open(customer.currentAddress?.mapUrl, '_blank')}
                     className="flex items-center gap-1.5 text-sm text-primary-600 dark:text-primary-400"
                   >
                     <Navigation className="w-4 h-4" />
@@ -203,9 +230,9 @@ export default function CustomerDetailPage() {
                   <MapPin className="w-5 h-5 text-accent-500" />
                   <h2 className="text-lg font-semibold text-slate-800 dark:text-white">Work Address</h2>
                 </div>
-                {customer.workAddress.mapUrl && (
+                {customer.workAddress?.mapUrl && (
                   <button
-                    onClick={() => window.open(customer.workAddress.mapUrl, '_blank')}
+                    onClick={() => window.open(customer.workAddress?.mapUrl, '_blank')}
                     className="flex items-center gap-1.5 text-sm text-primary-600 dark:text-primary-400"
                   >
                     <Navigation className="w-4 h-4" />

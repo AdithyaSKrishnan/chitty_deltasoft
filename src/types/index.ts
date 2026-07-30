@@ -14,7 +14,7 @@ export interface User {
 
 export interface Address {
   id: string;
-  type: 'home' | 'work';
+  type: 'home' | 'current' | 'work';
   houseOrBuildingName: string;
   landmark: string;
   village: string;
@@ -29,7 +29,7 @@ export interface Address {
 
 export interface CustomerPhoto {
   id: string;
-  type: 'customer' | 'address_proof' | 'id_proof' | 'work_location';
+  type: 'customer' | 'address_proof' | 'id_proof' | 'work_location' | 'addressProof' | 'idProof' | 'homeAddressProof' | 'currentAddressProof' | 'workAddressProof';
   url: string;
   uploadedAt: string;
 }
@@ -107,12 +107,14 @@ export interface DashboardRecentCustomer {
   id: string;
   customerId: string;
   name: string;
+  customerPhoto?: string;
   createdAt: string;
 }
 
 export interface DashboardRecentSubscription {
   id: string;
   customerName: string;
+  customerPhoto?: string;
   chitPlanName: string;
   monthlyPayment: number;
   paymentStatus: string;

@@ -16,7 +16,7 @@ interface AddressData {
 }
 
 interface AddressFormProps {
-  type: 'home' | 'work';
+  type: 'home' | 'current' | 'work';
   data?: AddressData;
   onChange: (data: Partial<AddressData>) => void;
   compact?: boolean;
@@ -66,8 +66,12 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
 
   const fieldLabels = {
     home: {
-      building: 'House Name',
+      building: 'House/Building Name',
       buildingPlaceholder: 'Enter house name',
+    },
+    current: {
+      building: 'House/Building Name',
+      buildingPlaceholder: 'Enter current house name',
     },
     work: {
       building: 'Office/Building Name',

@@ -93,7 +93,7 @@ export default function AgentCustomerDetailPage() {
           </button>
           <h1 className="text-lg font-bold text-slate-800 dark:text-white">Customer Details</h1>
         </div>
-        {customer.approvalStatus !== 'Approved' || customer.editEnabled ? (
+        {customer.editEnabled ? (
           <Button
             variant="secondary"
             onClick={() => navigate(`/agent/customer/edit/${customer.id}`)}

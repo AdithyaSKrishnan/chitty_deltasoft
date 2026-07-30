@@ -14,6 +14,7 @@ import {
   Sun,
   Menu,
   X,
+  Bell,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchCustomers, fetchCustomerEditRequests } from '../../services/api';
@@ -34,6 +35,8 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingVerificationCount, setPendingVerificationCount] = useState(0);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,8 +47,10 @@ export default function AdminLayout() {
           fetchCustomerEditRequests({ status: 'Pending' }),
         ]);
         if (isMounted) {
-          const count = (pendingCustomers?.length || 0) + (editRequests?.length || 0);
-          setPendingCount(count);
+          const verificationCount = pendingCustomers?.length || 0;
+          setPendingVerificationCount(verificationCount);
+          const totalCount = verificationCount + (editRequests?.length || 0);
+          setPendingCount(totalCount);
         }
       } catch (err) {
         console.error('Error fetching pending requests count:', err);
@@ -147,6 +152,18 @@ export default function AdminLayout() {
             </div>
             <div className="flex gap-2">
               <button
+                onClick={() => setShowVerificationModal(true)}
+                className="relative flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                title="Profile Verification"
+              >
+                <Bell className="w-4 h-4 text-primary-500" />
+                {pendingVerificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white animate-pulse">
+                    {pendingVerificationCount}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={toggleTheme}
                 className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
               >
@@ -161,7 +178,6 @@ export default function AdminLayout() {
                 className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm font-medium">Logout</span>
               </button>
             </div>
           </div>
@@ -170,6 +186,35 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <main className="lg:ml-64 min-h-screen">
+        {/* Top desktop header bar with Bell icon */}
+        <header className="hidden lg:flex sticky top-0 z-30 glass px-6 py-3 items-center justify-between border-b border-slate-200/50 dark:border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Welcome, {user?.name || 'Admin'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowVerificationModal(true)}
+              className="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              title="Profile Verification"
+            >
+              <Bell className="w-5 h-5 text-primary-500" />
+              {pendingVerificationCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white animate-pulse">
+                  {pendingVerificationCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
+        </header>
+
         {/* Mobile header */}
         <header className="lg:hidden sticky top-0 z-30 glass px-4 py-3 flex items-center justify-between">
           <button
@@ -181,12 +226,26 @@ export default function AdminLayout() {
           <h1 className="font-bold text-slate-800 dark:text-white">
             ChittyFinance
           </h1>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowVerificationModal(true)}
+              className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              title="Profile Verification"
+            >
+              <Bell className="w-5 h-5 text-primary-500" />
+              {pendingVerificationCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold rounded-full bg-red-500 text-white animate-pulse">
+                  {pendingVerificationCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
         </header>
 
         {/* Page content */}
@@ -194,6 +253,39 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Profile Verification Modal */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-white">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary-400" />
+                Profile Verification
+              </h3>
+              <button
+                onClick={() => setShowVerificationModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-300">
+              {pendingVerificationCount === 1
+                ? '1 customer needs to get their profile verified.'
+                : `${pendingVerificationCount} customer(s) need to get their profile verified.`}
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowVerificationModal(false)}
+                className="px-5 py-2 text-sm font-semibold rounded-xl bg-primary-600 hover:bg-primary-500 text-white transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
