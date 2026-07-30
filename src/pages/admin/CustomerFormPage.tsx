@@ -218,10 +218,14 @@ export default function CustomerFormPage() {
             className="opacity-60"
           />
           <Input
-            label="Primary Mobile Number"
-            placeholder="+91 XXXXX XXXXX"
+            label="Primary Mobile Number *"
+            placeholder="10-digit mobile number"
             value={customer.primaryMobile}
-            onChange={(e) => setCustomer({ ...customer, primaryMobile: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+              setCustomer({ ...customer, primaryMobile: val });
+            }}
+            maxLength={10}
             required
           />
           <Input

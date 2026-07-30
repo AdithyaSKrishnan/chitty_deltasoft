@@ -102,11 +102,11 @@ export default function AddCustomerPage() {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return customer.name && customer.primaryMobile;
+        return !!(customer.name.trim() && customer.primaryMobile.replace(/\D/g, '').length === 10);
       case 2:
-        return currentAddress.houseOrBuildingName && currentAddress.district && currentAddress.state && currentAddress.pinCode;
+        return true; // No address is mandatory!
       case 3:
-        return photos.customer && photos.idProof;
+        return true; // Photos optional
       case 4:
         return true;
       default:
@@ -211,10 +211,14 @@ export default function AddCustomerPage() {
               required
             />
             <Input
-              label="Mobile Number"
-              placeholder="+91 XXXXX XXXXX"
+              label="Mobile Number *"
+              placeholder="10-digit mobile number"
               value={customer.primaryMobile}
-              onChange={(e) => setCustomer({ ...customer, primaryMobile: e.target.value })}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setCustomer({ ...customer, primaryMobile: val });
+              }}
+              maxLength={10}
               required
             />
             <Input
