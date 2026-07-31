@@ -190,9 +190,11 @@ export default function CustomersPage() {
       render: (customer: Customer) => {
         const home = customer.homeAddress;
         const current = customer.currentAddress;
-        const mapUrl = home?.mapUrl || current?.mapUrl || (home?.latitude != null && home?.longitude != null ? `https://maps.google.com/?q=${home.latitude},${home.longitude}` : '');
+        const hasValidCoords = (home?.latitude != null && home?.longitude != null && Number(home.latitude) !== 0 && Number(home.latitude) !== 17.385 && Number(home.latitude) !== 8.8932) || (current?.latitude != null && current?.longitude != null && Number(current.latitude) !== 0 && Number(current.latitude) !== 17.385 && Number(current.latitude) !== 8.8932);
         
-        if (!mapUrl) {
+        const mapUrl = hasValidCoords ? (home?.mapUrl || current?.mapUrl || `https://maps.google.com/?q=${home?.latitude || current?.latitude},${home?.longitude || current?.longitude}`) : '';
+
+        if (!mapUrl || !hasValidCoords) {
           return <span className="text-slate-400 text-xs">—</span>;
         }
 

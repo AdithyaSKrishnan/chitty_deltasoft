@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MapPin, ExternalLink } from 'lucide-react';
 import { Input } from './Form';
 
@@ -37,18 +37,10 @@ function parseCoordsFromUrl(url: string): { lat: number; lng: number } | null {
 }
 
 export function AddressForm({ type, data, onChange, compact = false }: AddressFormProps) {
-  const [mapCoords, setMapCoords] = useState({
-    lat: data?.latitude || 17.385,
-    lng: data?.longitude || 78.4867,
+  const [mapCoords, setMapCoords] = useState<{ lat: number | null; lng: number | null }>({
+    lat: data?.latitude != null ? Number(data.latitude) : null,
+    lng: data?.longitude != null ? Number(data.longitude) : null,
   });
-
-  useEffect(() => {
-    onChange({
-      latitude: mapCoords.lat,
-      longitude: mapCoords.lng,
-      mapUrl: data?.mapUrl || `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
-    });
-  }, [mapCoords]);
 
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -56,6 +48,11 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
         (position) => {
           const { latitude, longitude } = position.coords;
           setMapCoords({ lat: latitude, lng: longitude });
+          onChange({
+            latitude,
+            longitude,
+            mapUrl: `https://maps.google.com/?q=${latitude},${longitude}`,
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -159,11 +156,18 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
         <div className="glass-card overflow-hidden">
           <div className="relative h-48 bg-slate-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-8 h-8 text-primary-500 mx-auto mb-2 animate-bounce" />
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Lat: {mapCoords.lat.toFixed(4)}, Lng: {mapCoords.lng.toFixed(4)}
+              <div className="text-center p-4">
+                <MapPin className={`w-8 h-8 mx-auto mb-2 ${mapCoords.lat != null ? 'text-primary-500 animate-bounce' : 'text-slate-400'}`} />
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {mapCoords.lat != null && mapCoords.lng != null
+                    ? `Lat: ${mapCoords.lat.toFixed(4)}, Lng: ${mapCoords.lng.toFixed(4)}`
+                    : 'No Location Set'}
                 </p>
+                {mapCoords.lat == null && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    Click "Use Current GPS Location" or paste a Google Maps link above to set coordinates.
+                  </p>
+                )}
               </div>
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-100/50 dark:to-slate-800/50 pointer-events-none" />
             </div>
@@ -177,19 +181,16 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
               <MapPin className="w-4 h-4" />
               Use Current GPS Location
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                window.open(
-                  data?.mapUrl || `https://maps.google.com/?q=${mapCoords.lat},${mapCoords.lng}`,
-                  '_blank'
-                )
-              }
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open in Maps
-            </button>
+            {data?.mapUrl && (
+              <button
+                type="button"
+                onClick={() => window.open(data.mapUrl, '_blank')}
+                className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open in Maps
+              </button>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-3">
@@ -197,19 +198,29 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
             label="Latitude"
             type="number"
             step="0.0001"
-            value={mapCoords.lat}
-            onChange={(e) =>
-              setMapCoords({ ...mapCoords, lat: parseFloat(e.target.value) || 0 })
-            }
+            value={mapCoords.lat ?? ''}
+            onChange={(e) => {
+              const lat = parseFloat(e.target.value);
+              const newCoords = { ...mapCoords, lat: isNaN(lat) ? null : lat };
+              setMapCoords(newCoords);
+              if (newCoords.lat != null && newCoords.lng != null) {
+                onChange({ latitude: newCoords.lat, longitude: newCoords.lng, mapUrl: `https://maps.google.com/?q=${newCoords.lat},${newCoords.lng}` });
+              }
+            }}
           />
           <Input
             label="Longitude"
             type="number"
             step="0.0001"
-            value={mapCoords.lng}
-            onChange={(e) =>
-              setMapCoords({ ...mapCoords, lng: parseFloat(e.target.value) || 0 })
-            }
+            value={mapCoords.lng ?? ''}
+            onChange={(e) => {
+              const lng = parseFloat(e.target.value);
+              const newCoords = { ...mapCoords, lng: isNaN(lng) ? null : lng };
+              setMapCoords(newCoords);
+              if (newCoords.lat != null && newCoords.lng != null) {
+                onChange({ latitude: newCoords.lat, longitude: newCoords.lng, mapUrl: `https://maps.google.com/?q=${newCoords.lat},${newCoords.lng}` });
+              }
+            }}
           />
         </div>
       </div>
