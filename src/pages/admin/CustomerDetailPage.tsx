@@ -5,8 +5,8 @@ import { Button } from '../../components/ui/Form';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Customer } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
-import api, { fetchCustomer, fetchSubscriptions, mapApiError } from '../../services/api';
-import { ArrowLeft, Edit, MapPin, Phone, Mail, CheckCircle, Navigation, CreditCard, Calendar, Clock } from 'lucide-react';
+import api, { fetchCustomer, fetchSubscriptions, deleteCustomer, mapApiError } from '../../services/api';
+import { ArrowLeft, Edit, MapPin, Phone, Mail, CheckCircle, Navigation, CreditCard, Calendar, Clock, Trash2 } from 'lucide-react';
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
@@ -16,6 +16,8 @@ export default function CustomerDetailPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = () => {
     if (!id) return;
@@ -43,11 +45,25 @@ export default function CustomerDetailPage() {
     }
   };
 
+  const handleDeleteCustomer = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    try {
+      await deleteCustomer(id);
+      navigate('/admin/customers');
+    } catch (err) {
+      setError(mapApiError(err));
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) return <div className="flex justify-center py-24"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>;
   if (!customer) return <div className="text-center py-12"><p>Customer record not found</p></div>;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
       {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl">{error}</div>}
       <PageHeader
         title={customer.name} subtitle={`Customer ID: ${customer.customerId}`}
@@ -63,6 +79,12 @@ export default function CustomerDetailPage() {
             )}
             
             <Button variant="secondary" onClick={() => navigate(`/admin/customers/edit/${customer.id}`)} icon={<Edit className="w-4 h-4" />}>Edit</Button>
+
+            {(user?.role === 'admin' || user?.role === 'subadmin') && (
+              <Button variant="danger" onClick={() => setShowDeleteModal(true)} icon={<Trash2 className="w-4 h-4" />}>
+                Delete
+              </Button>
+            )}
           </div>
         }
       />
@@ -311,6 +333,66 @@ export default function CustomerDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Customer Section at Bottom */}
+      {(user?.role === 'admin' || user?.role === 'subadmin') && (
+        <Card className="border-red-500/20 bg-red-500/5 dark:bg-red-950/10 mt-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-red-600 dark:text-red-400 text-base flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Delete Customer Account
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Permanently delete this customer profile, addresses, and associated records. This action cannot be undone.
+              </p>
+            </div>
+            <Button
+              variant="danger"
+              onClick={() => setShowDeleteModal(true)}
+              icon={<Trash2 className="w-4 h-4" />}
+              className="bg-red-600 hover:bg-red-700 text-white shrink-0 px-5 py-2.5"
+            >
+              Delete Customer
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 text-white">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold">Delete Customer Account</h3>
+            </div>
+            <p className="text-sm text-slate-300">
+              Are you sure you want to delete customer <strong className="text-white">{customer.name}</strong> ({customer.customerId})? This action is permanent and cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="text-slate-300 hover:bg-slate-800"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteCustomer}
+                isLoading={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white px-5"
+              >
+                Yes, Delete Customer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

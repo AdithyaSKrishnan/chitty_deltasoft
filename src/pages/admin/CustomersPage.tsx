@@ -68,25 +68,32 @@ export default function CustomersPage() {
     {
       key: 'name',
       header: 'Customer',
-      className: 'w-[280px] min-w-[240px]',
-      render: (customer: Customer) => (
-        <div className="flex items-center gap-3">
-          <img
-            src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
-            alt={customer.name}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div>
-            <p className="font-medium text-slate-800 dark:text-white">{customer.name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{customer.customerId}</p>
+      className: 'w-[220px] min-w-[180px]',
+      render: (customer: Customer) => {
+        const displayName = customer.name.length > 30
+          ? `${customer.name.substring(0, 27)}...`
+          : customer.name;
+        return (
+          <div className="flex items-center gap-3">
+            <img
+              src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
+              alt={customer.name}
+              className="w-10 h-10 rounded-full object-cover shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="font-medium text-slate-800 dark:text-white truncate" title={customer.name}>
+                {displayName}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{customer.customerId}</p>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'primaryMobile',
       header: 'Contact',
-      className: 'w-[180px] min-w-[150px]',
+      className: 'w-[150px] min-w-[130px]',
       render: (customer: Customer) => (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
@@ -105,26 +112,40 @@ export default function CustomersPage() {
     {
       key: 'email',
       header: 'Email',
-      className: 'w-[220px] min-w-[180px]',
+      className: 'w-[180px] min-w-[150px]',
       render: (customer: Customer) => (
-        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-          <Mail className="w-4 h-4" />
-          {customer.email || '—'}
+        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 truncate" title={customer.email}>
+          <Mail className="w-4 h-4 shrink-0" />
+          <span className="truncate">{customer.email || '—'}</span>
         </div>
       ),
     },
     {
       key: 'address',
       header: 'Location',
-      className: 'w-[200px] min-w-[160px]',
-      render: (customer: Customer) => (
-        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-          <MapPin className="w-4 h-4" />
-          {customer.homeAddress.district
-            ? `${customer.homeAddress.district}, ${customer.homeAddress.state}`
-            : '—'}
-        </div>
-      ),
+      className: 'w-[90px] min-w-[70px] text-center',
+      render: (customer: Customer) => {
+        const home = customer.homeAddress;
+        const current = customer.currentAddress;
+        const mapUrl = home?.mapUrl || current?.mapUrl || (home?.latitude != null && home?.longitude != null ? `https://maps.google.com/?q=${home.latitude},${home.longitude}` : '');
+        
+        if (!mapUrl) {
+          return <span className="text-slate-400 text-xs">—</span>;
+        }
+
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(mapUrl, '_blank');
+            }}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            title="Open location on Google Maps"
+          >
+            <MapPin className="w-4 h-4" />
+          </button>
+        );
+      },
     },
     {
       key: 'approvalStatus',
