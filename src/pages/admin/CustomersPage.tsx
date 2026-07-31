@@ -38,7 +38,7 @@ function CustomerNameCell({ name, customerId, customerPhoto }: { name: string; c
         className="w-10 h-10 rounded-full object-cover shrink-0"
       />
       <div
-        className="min-w-0 max-w-[210px] overflow-hidden"
+        className="min-w-0 max-w-[170px] overflow-hidden"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         title={name}
@@ -87,7 +87,7 @@ function EmailCell({ email }: { email?: string }) {
     <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
       <Mail className="w-4 h-4 shrink-0 text-slate-400" />
       <div
-        className="min-w-0 max-w-[170px] overflow-hidden"
+        className="min-w-0 max-w-[140px] overflow-hidden"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         title={email}
@@ -147,7 +147,7 @@ export default function CustomersPage() {
     {
       key: 'name',
       header: 'Customer',
-      className: 'w-[260px] min-w-[220px]',
+      className: 'w-[200px]',
       render: (customer: Customer) => (
         <CustomerNameCell
           name={customer.name}
@@ -159,7 +159,7 @@ export default function CustomersPage() {
     {
       key: 'primaryMobile',
       header: 'Contact',
-      className: 'w-[150px] min-w-[130px]',
+      className: 'w-[130px]',
       render: (customer: Customer) => (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
@@ -178,7 +178,7 @@ export default function CustomersPage() {
     {
       key: 'email',
       header: 'Email',
-      className: 'w-[180px] min-w-[150px]',
+      className: 'w-[150px]',
       render: (customer: Customer) => (
         <EmailCell email={customer.email} />
       ),
@@ -186,7 +186,7 @@ export default function CustomersPage() {
     {
       key: 'address',
       header: 'Location',
-      className: 'w-[90px] min-w-[70px] text-center',
+      className: 'w-[70px] text-center',
       render: (customer: Customer) => {
         const home = customer.homeAddress;
         const current = customer.currentAddress;
@@ -214,8 +214,8 @@ export default function CustomersPage() {
     },
     {
       key: 'approvalStatus',
-      header: 'Approval Status',
-      className: 'w-[160px] min-w-[130px]',
+      header: 'Status',
+      className: 'w-[110px]',
       render: (customer: Customer) => (
         <StatusBadge status={customer.approvalStatus ? customer.approvalStatus.toLowerCase() : 'pending'} />
       ),
@@ -223,7 +223,7 @@ export default function CustomersPage() {
     {
       key: 'actions',
       header: 'Actions',
-      className: 'w-[70px] min-w-[60px] text-right',
+      className: 'w-[60px] text-right',
       render: (customer: Customer) => (
         <div className="flex items-center justify-end">
           <button
