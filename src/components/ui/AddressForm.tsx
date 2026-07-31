@@ -22,19 +22,6 @@ interface AddressFormProps {
   compact?: boolean;
 }
 
-function parseCoordsFromUrl(url: string): { lat: number; lng: number } | null {
-  if (!url) return null;
-  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-
-  const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-
-  const directMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-  if (directMatch) return { lat: parseFloat(directMatch[1]), lng: parseFloat(directMatch[2]) };
-
-  return null;
-}
 
 export function AddressForm({ type, data, onChange, compact = false }: AddressFormProps) {
   const [mapCoords, setMapCoords] = useState<{ lat: number | null; lng: number | null }>({
@@ -135,37 +122,20 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
 
       {/* Map Section */}
       <div className="mt-4">
-        <label className="form-label mb-2 block">Location on Map / Custom Google Maps Link</label>
-        <div className="mb-3">
-          <Input
-            label="Google Maps URL / Coordinates Query"
-            placeholder="Paste Google Maps URL (e.g. https://maps.google.com/?q=...) or enter Lat, Lng"
-            value={data?.mapUrl || ''}
-            onChange={(e) => {
-              const url = e.target.value;
-              const coords = parseCoordsFromUrl(url);
-              if (coords) {
-                setMapCoords(coords);
-                onChange({ mapUrl: url, latitude: coords.lat, longitude: coords.lng });
-              } else {
-                onChange({ mapUrl: url });
-              }
-            }}
-          />
-        </div>
+        <label className="form-label mb-2 block">GPS Location Pin</label>
         <div className="glass-card overflow-hidden">
-          <div className="relative h-48 bg-slate-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
+          <div className="relative h-36 bg-slate-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center p-4">
-                <MapPin className={`w-8 h-8 mx-auto mb-2 ${mapCoords.lat != null ? 'text-primary-500 animate-bounce' : 'text-slate-400'}`} />
+                <MapPin className={`w-8 h-8 mx-auto mb-2 ${(data?.latitude != null || mapCoords.lat != null) ? 'text-primary-500 animate-bounce' : 'text-slate-400'}`} />
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                  {mapCoords.lat != null && mapCoords.lng != null
-                    ? `Lat: ${mapCoords.lat.toFixed(4)}, Lng: ${mapCoords.lng.toFixed(4)}`
+                  {(data?.latitude != null || mapCoords.lat != null)
+                    ? `Lat: ${Number(data?.latitude ?? mapCoords.lat).toFixed(4)}, Lng: ${Number(data?.longitude ?? mapCoords.lng).toFixed(4)}`
                     : 'No Location Set'}
                 </p>
-                {mapCoords.lat == null && (
+                {(data?.latitude == null && mapCoords.lat == null) && (
                   <p className="text-xs text-slate-400 mt-1">
-                    Click "Use Current GPS Location" or paste a Google Maps link above to set coordinates.
+                    Click "Use Current GPS Location" below to capture coordinates.
                   </p>
                 )}
               </div>
@@ -192,36 +162,6 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
               </button>
             )}
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 mt-3">
-          <Input
-            label="Latitude"
-            type="number"
-            step="0.0001"
-            value={mapCoords.lat ?? ''}
-            onChange={(e) => {
-              const lat = parseFloat(e.target.value);
-              const newCoords = { ...mapCoords, lat: isNaN(lat) ? null : lat };
-              setMapCoords(newCoords);
-              if (newCoords.lat != null && newCoords.lng != null) {
-                onChange({ latitude: newCoords.lat, longitude: newCoords.lng, mapUrl: `https://maps.google.com/?q=${newCoords.lat},${newCoords.lng}` });
-              }
-            }}
-          />
-          <Input
-            label="Longitude"
-            type="number"
-            step="0.0001"
-            value={mapCoords.lng ?? ''}
-            onChange={(e) => {
-              const lng = parseFloat(e.target.value);
-              const newCoords = { ...mapCoords, lng: isNaN(lng) ? null : lng };
-              setMapCoords(newCoords);
-              if (newCoords.lat != null && newCoords.lng != null) {
-                onChange({ latitude: newCoords.lat, longitude: newCoords.lng, mapUrl: `https://maps.google.com/?q=${newCoords.lat},${newCoords.lng}` });
-              }
-            }}
-          />
         </div>
       </div>
     </div>

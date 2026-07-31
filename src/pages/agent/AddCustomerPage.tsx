@@ -70,9 +70,10 @@ export default function AddCustomerPage() {
 
   const [photos, setPhotos] = useState({
     customer: '',
-    addressProof: '',
     idProof: '',
-    workLocation: '',
+    currentAddressProof: '',
+    permanentAddressProof: '',
+    workAddressProof: '',
   });
 
   const [subscription, setSubscription] = useState({
@@ -123,7 +124,12 @@ export default function AddCustomerPage() {
         homeAddress: finalHomeAddress,
         currentAddress,
         workAddress,
-        photos,
+        photos: {
+          customer: photos.customer,
+          idProof: photos.idProof,
+          addressProof: photos.currentAddressProof,
+          workLocation: photos.workAddressProof,
+        },
         subscription: subscription.chitPlanId ? subscription : null,
       });
       navigate('/agent');
@@ -316,10 +322,10 @@ export default function AddCustomerPage() {
             <h2 className="text-base font-semibold text-slate-800 dark:text-white">
               Photo Uploads
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <PhotoUpload
                 type="customer"
-                label="Photo"
+                label="Customer Photo"
                 value={photos.customer}
                 onChange={(url) => setPhotos({ ...photos, customer: url })}
                 compact
@@ -333,9 +339,23 @@ export default function AddCustomerPage() {
               />
               <PhotoUpload
                 type="address_proof"
-                label="Address"
-                value={photos.addressProof}
-                onChange={(url) => setPhotos({ ...photos, addressProof: url })}
+                label="Current Address Proof"
+                value={photos.currentAddressProof}
+                onChange={(url) => setPhotos({ ...photos, currentAddressProof: url })}
+                compact
+              />
+              <PhotoUpload
+                type="address_proof"
+                label="Permanent Address Proof"
+                value={photos.permanentAddressProof}
+                onChange={(url) => setPhotos({ ...photos, permanentAddressProof: url })}
+                compact
+              />
+              <PhotoUpload
+                type="work_location"
+                label="Work Address Proof"
+                value={photos.workAddressProof}
+                onChange={(url) => setPhotos({ ...photos, workAddressProof: url })}
                 compact
               />
             </div>

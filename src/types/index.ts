@@ -29,7 +29,7 @@ export interface Address {
 
 export interface CustomerPhoto {
   id: string;
-  type: 'customer' | 'address_proof' | 'id_proof' | 'work_location' | 'addressProof' | 'idProof' | 'homeAddressProof' | 'currentAddressProof' | 'workAddressProof';
+  type: 'customer' | 'address_proof' | 'id_proof' | 'work_location' | 'addressProof' | 'idProof' | 'homeAddressProof' | 'currentAddressProof' | 'permanentAddressProof' | 'workAddressProof';
   url: string;
   uploadedAt: string;
 }

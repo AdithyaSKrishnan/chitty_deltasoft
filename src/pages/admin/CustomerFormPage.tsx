@@ -82,9 +82,10 @@ export default function CustomerFormPage() {
 
   const [photos, setPhotos] = useState({
     customer: '',
-    addressProof: '',
     idProof: '',
-    workLocation: '',
+    currentAddressProof: '',
+    permanentAddressProof: '',
+    workAddressProof: '',
   });
 
   const [subscription, setSubscription] = useState({
@@ -94,6 +95,28 @@ export default function CustomerFormPage() {
 
   const [existingChitPlanId, setExistingChitPlanId] = useState('');
   const [enrollInPlan, setEnrollInPlan] = useState(false);
+  const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
+
+  const handleToggleSameAsCurrent = (checked: boolean) => {
+    setSameAsCurrentAddress(checked);
+    if (checked) {
+      setHomeAddress({
+        ...currentAddress,
+        type: 'home' as const,
+      });
+    }
+  };
+
+  const handleCurrentAddressChange = (data: Partial<typeof currentAddress>) => {
+    const updated = { ...currentAddress, ...data };
+    setCurrentAddress(updated);
+    if (sameAsCurrentAddress) {
+      setHomeAddress({
+        ...updated,
+        type: 'home' as const,
+      });
+    }
+  };
 
   useEffect(() => {
     fetchChitPlans()
@@ -129,14 +152,16 @@ export default function CustomerFormPage() {
         }
 
         const customerPhoto = data.photos.find((p: any) => p.type === 'customer')?.url || '';
-        const addressProof = data.photos.find((p: any) => p.type === 'addressProof')?.url || '';
         const idProof = data.photos.find((p: any) => p.type === 'idProof')?.url || '';
-        const workLocation = data.photos.find((p: any) => p.type === 'workLocation')?.url || '';
+        const addressProof = data.photos.find((p: any) => p.type === 'addressProof' || p.type === 'currentAddressProof')?.url || '';
+        const permProof = data.photos.find((p: any) => p.type === 'permanentAddressProof')?.url || '';
+        const workProof = data.photos.find((p: any) => p.type === 'workLocation' || p.type === 'workAddressProof')?.url || '';
         setPhotos({
           customer: customerPhoto,
-          addressProof: addressProof,
           idProof: idProof,
-          workLocation: workLocation,
+          currentAddressProof: addressProof,
+          permanentAddressProof: permProof,
+          workAddressProof: workProof,
         });
 
         if (subs.length > 0) {
@@ -156,14 +181,20 @@ export default function CustomerFormPage() {
     setError('');
     setIsSaving(true);
     try {
+      const finalHomeAddress = sameAsCurrentAddress ? { ...currentAddress, type: 'home' as const } : homeAddress;
       if (isEdit && id) {
         await updateCustomer(id, {
           ...customer,
-          homeAddress,
+          homeAddress: finalHomeAddress,
           currentAddress,
           workAddress,
         });
-        await uploadCustomerPhotos(id, photos);
+        await uploadCustomerPhotos(id, {
+          customer: photos.customer,
+          idProof: photos.idProof,
+          addressProof: photos.currentAddressProof,
+          workLocation: photos.workAddressProof,
+        });
         
         if (enrollInPlan && subscription.chitPlanId && subscription.chitPlanId !== existingChitPlanId) {
           await createSubscription({
@@ -175,10 +206,15 @@ export default function CustomerFormPage() {
       } else {
         await createCustomerWithDetails({
           customer,
-          homeAddress,
+          homeAddress: finalHomeAddress,
           currentAddress,
           workAddress,
-          photos,
+          photos: {
+            customer: photos.customer,
+            idProof: photos.idProof,
+            addressProof: photos.currentAddressProof,
+            workLocation: photos.workAddressProof,
+          },
           subscription: enrollInPlan ? subscription : null,
         });
       }
@@ -263,25 +299,39 @@ export default function CustomerFormPage() {
         </div>
       </Card>
 
-      {/* Permanent Address */}
-      <Card>
-        <AddressForm
-          type="home"
-          data={homeAddress}
-          onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
-        />
-      </Card>
-
-      {/* Current Address */}
+      {/* 1ST: Current Address */}
       <Card>
         <AddressForm
           type="current"
           data={currentAddress}
-          onChange={(data) => setCurrentAddress({ ...currentAddress, ...data })}
+          onChange={handleCurrentAddressChange}
         />
       </Card>
 
-      {/* Work Address */}
+      {/* 2ND: Permanent Address */}
+      <Card className="space-y-4">
+        <label className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl cursor-pointer">
+          <input
+            type="checkbox"
+            checked={sameAsCurrentAddress}
+            onChange={(e) => handleToggleSameAsCurrent(e.target.checked)}
+            className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
+          />
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Permanent Address is Same as Current Address (including GPS location)
+          </span>
+        </label>
+
+        {!sameAsCurrentAddress && (
+          <AddressForm
+            type="home"
+            data={homeAddress}
+            onChange={(data) => setHomeAddress({ ...homeAddress, ...data })}
+          />
+        )}
+      </Card>
+
+      {/* 3RD: Work Address */}
       <Card>
         <AddressForm
           type="work"
@@ -290,6 +340,7 @@ export default function CustomerFormPage() {
         />
       </Card>
 
+      {/* Photo Uploads */}
       <Card>
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
           Photo Uploads
@@ -302,22 +353,28 @@ export default function CustomerFormPage() {
             onChange={(url) => setPhotos({ ...photos, customer: url })}
           />
           <PhotoUpload
-            type="address_proof"
-            label="Address Proof"
-            value={photos.addressProof}
-            onChange={(url) => setPhotos({ ...photos, addressProof: url })}
-          />
-          <PhotoUpload
             type="id_proof"
             label="ID Proof"
             value={photos.idProof}
             onChange={(url) => setPhotos({ ...photos, idProof: url })}
           />
           <PhotoUpload
+            type="address_proof"
+            label="Current Address Proof"
+            value={photos.currentAddressProof}
+            onChange={(url) => setPhotos({ ...photos, currentAddressProof: url })}
+          />
+          <PhotoUpload
+            type="address_proof"
+            label="Permanent Address Proof"
+            value={photos.permanentAddressProof}
+            onChange={(url) => setPhotos({ ...photos, permanentAddressProof: url })}
+          />
+          <PhotoUpload
             type="work_location"
-            label="Work Location Photo"
-            value={photos.workLocation}
-            onChange={(url) => setPhotos({ ...photos, workLocation: url })}
+            label="Work Address Proof"
+            value={photos.workAddressProof}
+            onChange={(url) => setPhotos({ ...photos, workAddressProof: url })}
           />
         </div>
       </Card>

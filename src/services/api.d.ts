@@ -46,6 +46,10 @@ export function uploadCustomerPhotos(
     customer?: string;
     addressProof?: string;
     idProof?: string;
+    workLocation?: string;
+    currentAddressProof?: string;
+    permanentAddressProof?: string;
+    workAddressProof?: string;
   },
 ): Promise<void>;
 export function deleteCustomer(id: string): Promise<void>;

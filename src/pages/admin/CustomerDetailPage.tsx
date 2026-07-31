@@ -275,10 +275,9 @@ export default function CustomerDetailPage() {
                     </div>
                     <p className="text-[11px] font-medium text-center text-slate-500 dark:text-slate-400">
                       {photo.type === 'customer' && 'Customer Photo'}
-                      {photo.type === 'addressProof' && 'Address Proof'}
                       {photo.type === 'idProof' && 'ID Proof'}
-                      {photo.type === 'homeAddressProof' && 'Home Address Proof'}
-                      {photo.type === 'currentAddressProof' && 'Current Address Proof'}
+                      {(photo.type === 'addressProof' || photo.type === 'currentAddressProof') && 'Current Address Proof'}
+                      {photo.type === 'permanentAddressProof' && 'Permanent Address Proof'}
                       {photo.type === 'workAddressProof' && 'Work Address Proof'}
                     </p>
                   </div>
