@@ -50,6 +50,21 @@ export default function CustomerFormPage() {
     mapUrl: '',
   });
 
+  const [currentAddress, setCurrentAddress] = useState({
+    id: '',
+    type: 'current' as const,
+    houseOrBuildingName: '',
+    landmark: '',
+    village: '',
+    taluk: '',
+    district: '',
+    state: '',
+    pinCode: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    mapUrl: '',
+  });
+
   const [workAddress, setWorkAddress] = useState({
     id: '',
     type: 'work' as const,
@@ -78,7 +93,6 @@ export default function CustomerFormPage() {
   });
 
   const [existingChitPlanId, setExistingChitPlanId] = useState('');
-  const [addWorkAddress, setAddWorkAddress] = useState(false);
   const [enrollInPlan, setEnrollInPlan] = useState(false);
 
   useEffect(() => {
@@ -107,9 +121,11 @@ export default function CustomerFormPage() {
         if (data.homeAddress) {
           setHomeAddress({ ...data.homeAddress, type: 'home' });
         }
+        if (data.currentAddress) {
+          setCurrentAddress({ ...data.currentAddress, type: 'current' });
+        }
         if (data.workAddress) {
           setWorkAddress({ ...data.workAddress, type: 'work' });
-          setAddWorkAddress(true);
         }
 
         const customerPhoto = data.photos.find((p: any) => p.type === 'customer')?.url || '';
@@ -144,7 +160,8 @@ export default function CustomerFormPage() {
         await updateCustomer(id, {
           ...customer,
           homeAddress,
-          workAddress: addWorkAddress ? workAddress : null,
+          currentAddress,
+          workAddress,
         });
         await uploadCustomerPhotos(id, photos);
         
@@ -159,7 +176,8 @@ export default function CustomerFormPage() {
         await createCustomerWithDetails({
           customer,
           homeAddress,
-          workAddress: addWorkAddress ? workAddress : null,
+          currentAddress,
+          workAddress,
           photos,
           subscription: enrollInPlan ? subscription : null,
         });
@@ -245,6 +263,7 @@ export default function CustomerFormPage() {
         </div>
       </Card>
 
+      {/* Permanent Address */}
       <Card>
         <AddressForm
           type="home"
@@ -253,32 +272,23 @@ export default function CustomerFormPage() {
         />
       </Card>
 
+      {/* Current Address */}
       <Card>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={addWorkAddress}
-            onChange={(e) => setAddWorkAddress(e.target.checked)}
-            className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-          />
-          <div>
-            <p className="font-medium text-slate-800 dark:text-white">Add Work Address</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Include customer's workplace location
-            </p>
-          </div>
-        </label>
+        <AddressForm
+          type="current"
+          data={currentAddress}
+          onChange={(data) => setCurrentAddress({ ...currentAddress, ...data })}
+        />
       </Card>
 
-      {addWorkAddress && (
-        <Card>
-          <AddressForm
-            type="work"
-            data={workAddress}
-            onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
-          />
-        </Card>
-      )}
+      {/* Work Address */}
+      <Card>
+        <AddressForm
+          type="work"
+          data={workAddress}
+          onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
+        />
+      </Card>
 
       <Card>
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
@@ -303,14 +313,12 @@ export default function CustomerFormPage() {
             value={photos.idProof}
             onChange={(url) => setPhotos({ ...photos, idProof: url })}
           />
-          {addWorkAddress && (
-            <PhotoUpload
-              type="work_location"
-              label="Work Location Photo"
-              value={photos.workLocation}
-              onChange={(url) => setPhotos({ ...photos, workLocation: url })}
-            />
-          )}
+          <PhotoUpload
+            type="work_location"
+            label="Work Location Photo"
+            value={photos.workLocation}
+            onChange={(url) => setPhotos({ ...photos, workLocation: url })}
+          />
         </div>
       </Card>
 

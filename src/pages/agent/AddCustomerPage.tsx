@@ -81,7 +81,6 @@ export default function AddCustomerPage() {
   });
 
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
-  const [addWorkAddress, setAddWorkAddress] = useState(false);
 
   useEffect(() => {
     fetchChitPlans()
@@ -123,7 +122,7 @@ export default function AddCustomerPage() {
         customer,
         homeAddress: finalHomeAddress,
         currentAddress,
-        workAddress: addWorkAddress ? workAddress : null,
+        workAddress,
         photos,
         subscription: subscription.chitPlanId ? subscription : null,
       });
@@ -272,7 +271,7 @@ export default function AddCustomerPage() {
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800 dark:text-white">
-                  Permanent (Home) Address
+                  Permanent Address
                 </h2>
               </div>
               <label className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl cursor-pointer">
@@ -298,36 +297,17 @@ export default function AddCustomerPage() {
             </Card>
 
             {/* WORK ADDRESS - THIRD */}
-            <label className="flex items-center gap-3 p-4 glass-card cursor-pointer">
-              <input
-                type="checkbox"
-                checked={addWorkAddress}
-                onChange={(e) => setAddWorkAddress(e.target.checked)}
-                className="w-5 h-5 rounded text-primary-600"
+            <Card className="p-4">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white mb-4">
+                Work Address
+              </h2>
+              <AddressForm
+                type="work"
+                data={workAddress}
+                onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
+                compact
               />
-              <div>
-                <p className="font-medium text-slate-800 dark:text-white">
-                  Add Work Address
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Include workplace location
-                </p>
-              </div>
-            </label>
-
-            {addWorkAddress && (
-              <Card className="p-4">
-                <h2 className="text-base font-semibold text-slate-800 dark:text-white mb-4">
-                  Work Address
-                </h2>
-                <AddressForm
-                  type="work"
-                  data={workAddress}
-                  onChange={(data) => setWorkAddress({ ...workAddress, ...data })}
-                  compact
-                />
-              </Card>
-            )}
+            </Card>
           </div>
         )}
 

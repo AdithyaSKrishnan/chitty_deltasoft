@@ -83,7 +83,7 @@ export function AddressForm({ type, data, onChange, compact = false }: AddressFo
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-5 h-5 text-primary-500" />
         <h3 className="font-semibold text-slate-800 dark:text-white">
-          {type === 'home' ? 'Home Address' : 'Work Address'}
+          {type === 'home' ? 'Permanent Address' : type === 'current' ? 'Current Address' : 'Work Address'}
         </h3>
       </div>
 
