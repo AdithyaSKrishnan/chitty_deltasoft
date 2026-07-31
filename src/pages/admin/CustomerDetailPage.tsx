@@ -79,12 +79,6 @@ export default function CustomerDetailPage() {
             )}
             
             <Button variant="secondary" onClick={() => navigate(`/admin/customers/edit/${customer.id}`)} icon={<Edit className="w-4 h-4" />}>Edit</Button>
-
-            {(user?.role === 'admin' || user?.role === 'subadmin') && (
-              <Button variant="danger" onClick={() => setShowDeleteModal(true)} icon={<Trash2 className="w-4 h-4" />}>
-                Delete
-              </Button>
-            )}
           </div>
         }
       />
