@@ -68,7 +68,7 @@ export default function CustomersPage() {
     {
       key: 'name',
       header: 'Customer',
-      className: 'w-[220px] min-w-[180px]',
+      className: 'w-[320px] min-w-[280px]',
       render: (customer: Customer) => {
         const displayName = customer.name.length > 30
           ? `${customer.name.substring(0, 27)}...`
