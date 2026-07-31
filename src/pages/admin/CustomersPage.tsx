@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, Pagination, SearchBar } from '../../components/ui/Table';
 import { Card, PageHeader } from '../../components/ui/Card';
@@ -8,6 +8,57 @@ import { StatusBadge } from '../../components/ui/Badge';
 import { Plus, Eye, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { deleteCustomer, fetchCustomers, mapApiError } from '../../services/api';
+
+function CustomerNameCell({ name, customerId, customerPhoto }: { name: string; customerId: string; customerPhoto?: string }) {
+  const [isScrolling, setIsScrolling] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const needsTruncation = name.length > 25;
+  const truncatedName = needsTruncation ? `${name.substring(0, 22)}...` : name;
+
+  const handleMouseEnter = () => {
+    if (!needsTruncation) return;
+    timerRef.current = setTimeout(() => {
+      setIsScrolling(true);
+    }, 1000);
+  };
+
+  const handleMouseLeave = () => {
+    setIsScrolling(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <img
+        src={customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff`}
+        alt={name}
+        className="w-10 h-10 rounded-full object-cover shrink-0"
+      />
+      <div
+        className="min-w-0 max-w-[210px] overflow-hidden"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        title={name}
+      >
+        {isScrolling ? (
+          <div className="whitespace-nowrap animate-marquee font-medium text-slate-800 dark:text-white">
+            <span className="inline-block pr-6">{name}</span>
+            <span className="inline-block pr-6">{name}</span>
+          </div>
+        ) : (
+          <p className="font-medium text-slate-800 dark:text-white truncate">
+            {truncatedName}
+          </p>
+        )}
+        <p className="text-xs text-slate-500 dark:text-slate-400">{customerId}</p>
+      </div>
+    </div>
+  );
+}
 
 const PAGE_SIZE = 10;
 
@@ -68,27 +119,14 @@ export default function CustomersPage() {
     {
       key: 'name',
       header: 'Customer',
-      className: 'w-[320px] min-w-[280px]',
-      render: (customer: Customer) => {
-        const displayName = customer.name.length > 30
-          ? `${customer.name.substring(0, 27)}...`
-          : customer.name;
-        return (
-          <div className="flex items-center gap-3">
-            <img
-              src={customer.customerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name)}&background=3b82f6&color=fff`}
-              alt={customer.name}
-              className="w-10 h-10 rounded-full object-cover shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="font-medium text-slate-800 dark:text-white truncate" title={customer.name}>
-                {displayName}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{customer.customerId}</p>
-            </div>
-          </div>
-        );
-      },
+      className: 'w-[260px] min-w-[220px]',
+      render: (customer: Customer) => (
+        <CustomerNameCell
+          name={customer.name}
+          customerId={customer.customerId}
+          customerPhoto={customer.customerPhoto}
+        />
+      ),
     },
     {
       key: 'primaryMobile',

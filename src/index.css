@@ -157,3 +157,18 @@
 .leaflet-control-container .leaflet-top.leaflet-left {
   top: 10px;
 }
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 5s linear infinite;
+}
