@@ -60,6 +60,54 @@ function CustomerNameCell({ name, customerId, customerPhoto }: { name: string; c
   );
 }
 
+function EmailCell({ email }: { email?: string }) {
+  const [isScrolling, setIsScrolling] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  if (!email) return <span className="text-slate-400 text-xs">—</span>;
+
+  const needsTruncation = email.length > 25;
+  const truncatedEmail = needsTruncation ? `${email.substring(0, 22)}...` : email;
+
+  const handleMouseEnter = () => {
+    if (!needsTruncation) return;
+    timerRef.current = setTimeout(() => {
+      setIsScrolling(true);
+    }, 1000);
+  };
+
+  const handleMouseLeave = () => {
+    setIsScrolling(false);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+      <Mail className="w-4 h-4 shrink-0 text-slate-400" />
+      <div
+        className="min-w-0 max-w-[170px] overflow-hidden"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        title={email}
+      >
+        {isScrolling ? (
+          <div className="whitespace-nowrap animate-marquee font-normal text-slate-700 dark:text-slate-200">
+            <span className="inline-block pr-6">{email}</span>
+            <span className="inline-block pr-6">{email}</span>
+          </div>
+        ) : (
+          <span className="truncate font-normal text-slate-700 dark:text-slate-200 block">
+            {truncatedEmail}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const PAGE_SIZE = 10;
 
 export default function CustomersPage() {
@@ -152,10 +200,7 @@ export default function CustomersPage() {
       header: 'Email',
       className: 'w-[180px] min-w-[150px]',
       render: (customer: Customer) => (
-        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 truncate" title={customer.email}>
-          <Mail className="w-4 h-4 shrink-0" />
-          <span className="truncate">{customer.email || '—'}</span>
-        </div>
+        <EmailCell email={customer.email} />
       ),
     },
     {
