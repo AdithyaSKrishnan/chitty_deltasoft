@@ -5,9 +5,8 @@ import { Card, PageHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Form';
 import { Customer } from '../../types';
 import { StatusBadge } from '../../components/ui/Badge';
-import { Plus, Eye, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
-import { Modal } from '../../components/ui/Modal';
-import { deleteCustomer, fetchCustomers, mapApiError } from '../../services/api';
+import { Plus, Eye, MapPin, Phone, Mail } from 'lucide-react';
+import { fetchCustomers, mapApiError } from '../../services/api';
 
 function CustomerNameCell({ name, customerId, customerPhoto }: { name: string; customerId: string; customerPhoto?: string }) {
   const [isScrolling, setIsScrolling] = useState(false);
@@ -117,11 +116,6 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; customer: Customer | null }>({
-    open: false,
-    customer: null,
-  });
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadCustomers = useCallback(async () => {
     setIsLoading(true);
@@ -148,20 +142,6 @@ export default function CustomersPage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE,
   );
-
-  const handleDelete = async () => {
-    if (!deleteModal.customer) return;
-    setIsDeleting(true);
-    try {
-      await deleteCustomer(deleteModal.customer.id);
-      setDeleteModal({ open: false, customer: null });
-      await loadCustomers();
-    } catch (err) {
-      setError(mapApiError(err));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   const columns = [
     {
@@ -241,35 +221,18 @@ export default function CustomersPage() {
     {
       key: 'actions',
       header: 'Actions',
-      className: 'w-[120px] min-w-[100px] text-right',
+      className: 'w-[70px] min-w-[60px] text-right',
       render: (customer: Customer) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end">
           <button
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/admin/customers/${customer.id}`);
             }}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-primary-600 transition-colors"
+            className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+            title="View Customer Details"
           >
             <Eye className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/admin/customers/edit/${customer.id}`);
-            }}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-accent-600 transition-colors"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteModal({ open: true, customer });
-            }}
-            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-600 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ),
@@ -325,30 +288,6 @@ export default function CustomersPage() {
           </>
         )}
       </Card>
-
-      <Modal
-        isOpen={deleteModal.open}
-        onClose={() => setDeleteModal({ open: false, customer: null })}
-        title="Delete Customer"
-        size="sm"
-      >
-        <p className="text-slate-600 dark:text-slate-300 mb-6">
-          Are you sure you want to delete{' '}
-          <span className="font-semibold">{deleteModal.customer?.name}</span>? This action
-          cannot be undone.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <Button
-            variant="secondary"
-            onClick={() => setDeleteModal({ open: false, customer: null })}
-          >
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete} isLoading={isDeleting}>
-            Delete
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }
