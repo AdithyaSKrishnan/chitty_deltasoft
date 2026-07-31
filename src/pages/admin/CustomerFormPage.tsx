@@ -318,7 +318,7 @@ export default function CustomerFormPage() {
             className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
           />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Permanent Address is Same as Current Address (including GPS location)
+            Permanent Address is Same as Current Address
           </span>
         </label>
 
