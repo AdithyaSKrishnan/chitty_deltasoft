@@ -124,6 +124,15 @@ export default function SubscriptionsPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const storageKey = `chitty_paid_months_${sub.id}`;
+    let storedMonths: number[] = [];
+    try {
+      const storedStr = localStorage.getItem(storageKey);
+      if (storedStr) storedMonths = JSON.parse(storedStr);
+    } catch (e) {
+      storedMonths = [];
+    }
+
     const instAmountVal = sub.monthlyPayment || sub.chitPlanMonthlyPayment || 5000;
     const formattedAmount = `₹${Number(instAmountVal).toLocaleString('en-IN')}`;
 
@@ -142,10 +151,10 @@ export default function SubscriptionsPage() {
       let paidDate = '—';
       let receiptNo = '—';
 
-      if (paidInstallmentsMap[i]) {
+      if (paidInstallmentsMap[i] || storedMonths.includes(i)) {
         status = isFuture ? 'advance_paid' : 'paid';
-        paidDate = paidInstallmentsMap[i].paidDate;
-        receiptNo = paidInstallmentsMap[i].receiptNo;
+        paidDate = paidInstallmentsMap[i]?.paidDate || 'Today';
+        receiptNo = paidInstallmentsMap[i]?.receiptNo || `#REC-10${i}`;
       } else if (i === 1) {
         status = 'paid';
         const paidDateObj = new Date(dueDateObj);
@@ -219,6 +228,19 @@ export default function SubscriptionsPage() {
         paidDate: todayStr,
         receiptNo: newReceiptNo,
       };
+
+      const storageKey = `chitty_paid_months_${selectedSubForInstallments.id}`;
+      let storedMonths: number[] = [];
+      try {
+        const storedStr = localStorage.getItem(storageKey);
+        if (storedStr) storedMonths = JSON.parse(storedStr);
+      } catch (e) {
+        storedMonths = [];
+      }
+      if (!storedMonths.includes(selectedPaymentInst.monthNumber)) {
+        storedMonths.push(selectedPaymentInst.monthNumber);
+      }
+      localStorage.setItem(storageKey, JSON.stringify(storedMonths));
 
       setPaidInstallmentsMap((prev) => ({
         ...prev,

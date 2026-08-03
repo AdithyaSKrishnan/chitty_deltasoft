@@ -126,6 +126,40 @@ export default function ReportsPage() {
     return sub.paymentStatus;
   };
 
+  const getPaidInstallmentsList = () => {
+    const paidList: any[] = [];
+    subscriptionsList.forEach((s) => {
+      const storageKey = `chitty_paid_months_${s.id}`;
+      let storedMonths: number[] = [];
+      try {
+        const storedStr = localStorage.getItem(storageKey);
+        if (storedStr) {
+          storedMonths = JSON.parse(storedStr);
+        }
+      } catch (e) {
+        storedMonths = [];
+      }
+
+      const isMonth1Paid = s.paymentStatus === 'paid' || (s.joinedDate && new Date(s.joinedDate) <= new Date());
+      if (isMonth1Paid && !storedMonths.includes(1)) {
+        storedMonths.push(1);
+      }
+
+      storedMonths.sort((a, b) => a - b).forEach((mNum) => {
+        paidList.push({
+          id: `${s.id}-m${mNum}`,
+          customerName: s.customerName,
+          chitPlanName: s.chitPlanName,
+          monthNumber: mNum,
+          receiptNo: `#REC-${100 + mNum}`,
+          paidDate: s.joinedDate || 'Recent',
+          monthlyPayment: s.monthlyPayment || 5000,
+        });
+      });
+    });
+    return paidList;
+  };
+
   const getPaidSubscriptions = () => {
     return subscriptionsList.filter(s => getDynamicPaymentStatus(s) === 'paid');
   };
@@ -135,9 +169,9 @@ export default function ReportsPage() {
   };
 
   const getTotalCollections = () => {
-    const paidSubs = getPaidSubscriptions();
-    if (paidSubs.length > 0) {
-      return paidSubs.reduce((sum, s) => sum + (s.monthlyPayment || 5000), 0);
+    const list = getPaidInstallmentsList();
+    if (list.length > 0) {
+      return list.reduce((sum, item) => sum + item.monthlyPayment, 0);
     }
     return summary?.total_collections || 0;
   };
@@ -291,24 +325,24 @@ export default function ReportsPage() {
                   <tr>
                     <th className="py-4 px-4">Customer Name</th>
                     <th className="py-4 px-4">Chit Plan</th>
+                    <th className="py-4 px-4">Installment</th>
                     <th className="py-4 px-4">Receipt No</th>
-                    <th className="py-4 px-4">Payment Date</th>
                     <th className="py-4 px-4">Amount Collected</th>
                     <th className="py-4 px-4 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                  {getPaidSubscriptions().map((s, idx) => (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white">{s.customerName}</td>
-                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.chitPlanName}</td>
-                      <td className="py-4 px-4 font-mono text-xs text-slate-500">#REC-10{idx + 1}</td>
-                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300">{s.joinedDate || 'Recent'}</td>
-                      <td className="py-4 px-4 font-bold text-green-600 dark:text-green-400">₹{(s.monthlyPayment || 5000).toLocaleString()}</td>
+                  {getPaidInstallmentsList().map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white">{item.customerName}</td>
+                      <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-medium">{item.chitPlanName}</td>
+                      <td className="py-4 px-4 text-xs font-semibold text-primary-600 dark:text-primary-400">Month {item.monthNumber}</td>
+                      <td className="py-4 px-4 font-mono text-xs text-slate-500">{item.receiptNo}</td>
+                      <td className="py-4 px-4 font-bold text-green-600 dark:text-green-400">₹{(item.monthlyPayment).toLocaleString()}</td>
                       <td className="py-4 px-4 text-center"><StatusBadge status="paid" /></td>
                     </tr>
                   ))}
-                  {getPaidSubscriptions().length === 0 && (
+                  {getPaidInstallmentsList().length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-slate-500">No collections recorded for this period.</td>
                     </tr>

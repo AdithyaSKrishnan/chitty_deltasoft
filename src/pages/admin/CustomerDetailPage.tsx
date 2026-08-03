@@ -33,6 +33,15 @@ export default function CustomerDetailPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const storageKey = `chitty_paid_months_${sub.id}`;
+    let storedMonths: number[] = [];
+    try {
+      const storedStr = localStorage.getItem(storageKey);
+      if (storedStr) storedMonths = JSON.parse(storedStr);
+    } catch (e) {
+      storedMonths = [];
+    }
+
     for (let i = 1; i <= count; i++) {
       const dueDateObj = new Date(baseDate);
       dueDateObj.setMonth(baseDate.getMonth() + (i - 1));
@@ -48,10 +57,10 @@ export default function CustomerDetailPage() {
       let paidDate = '—';
       let receiptNo = '—';
 
-      if (paidInstallmentsMap[i]) {
+      if (paidInstallmentsMap[i] || storedMonths.includes(i)) {
         status = isFuture ? 'advance_paid' : 'paid';
-        paidDate = paidInstallmentsMap[i].paidDate;
-        receiptNo = paidInstallmentsMap[i].receiptNo;
+        paidDate = paidInstallmentsMap[i]?.paidDate || 'Today';
+        receiptNo = paidInstallmentsMap[i]?.receiptNo || `#REC-10${i}`;
       } else if (i === 1) {
         status = 'paid';
         const paidDateObj = new Date(dueDateObj);
@@ -87,7 +96,7 @@ export default function CustomerDetailPage() {
   };
 
   const handleProcessPayment = () => {
-    if (!selectedPaymentInst) return;
+    if (!selectedPaymentInst || !selectedSubForInstallments) return;
     setIsProcessingPayment(true);
 
     setTimeout(() => {
@@ -98,9 +107,22 @@ export default function CustomerDetailPage() {
       const todayStr = `${dd}/${mm}/${yyyy}`;
       const newReceiptNo = `#REC-${Math.floor(Math.random() * 899 + 100)}`;
 
+      const storageKey = `chitty_paid_months_${selectedSubForInstallments.id}`;
+      let storedMonths: number[] = [];
+      try {
+        const storedStr = localStorage.getItem(storageKey);
+        if (storedStr) storedMonths = JSON.parse(storedStr);
+      } catch (e) {
+        storedMonths = [];
+      }
+      if (!storedMonths.includes(selectedPaymentInst.monthNumber)) {
+        storedMonths.push(selectedPaymentInst.monthNumber);
+      }
+      localStorage.setItem(storageKey, JSON.stringify(storedMonths));
+
       const updatedReceipt = {
         ...selectedPaymentInst,
-        status: 'paid',
+        status: selectedPaymentInst.isFuture ? 'advance_paid' : 'paid',
         paidDate: todayStr,
         receiptNo: newReceiptNo,
       };
