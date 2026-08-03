@@ -111,8 +111,31 @@ export default function ReportsPage() {
     });
   };
 
+  const getDynamicPaymentStatus = (sub: Subscription) => {
+    if (sub.paymentStatus === 'paid') return 'paid';
+    const baseDate = sub.joinedDate ? new Date(sub.joinedDate) : new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const month1DueDate = new Date(baseDate);
+    month1DueDate.setHours(0, 0, 0, 0);
+
+    if (month1DueDate <= today) {
+      return 'paid';
+    }
+    return sub.paymentStatus;
+  };
+
+  const getPaidSubscriptions = () => {
+    return subscriptionsList.filter(s => getDynamicPaymentStatus(s) === 'paid');
+  };
+
+  const getPendingSubscriptions = () => {
+    return subscriptionsList.filter(s => getDynamicPaymentStatus(s) !== 'paid');
+  };
+
   const getTotalCollections = () => {
-    const paidSubs = subscriptionsList.filter(s => s.paymentStatus === 'paid');
+    const paidSubs = getPaidSubscriptions();
     if (paidSubs.length > 0) {
       return paidSubs.reduce((sum, s) => sum + (s.monthlyPayment || 5000), 0);
     }
@@ -235,7 +258,7 @@ export default function ReportsPage() {
         />
         <StatCard
           title="Pending Payments"
-          value={summary?.pending_payments || 0}
+          value={getPendingSubscriptions().length}
           subtitle="Click to view pending payments"
           icon={<Calendar className="w-6 h-6" />}
           trend={{ value: 2, isPositive: false }}
@@ -275,7 +298,7 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                  {subscriptionsList.filter(s => s.paymentStatus === 'paid').map((s, idx) => (
+                  {getPaidSubscriptions().map((s, idx) => (
                     <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                       <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white">{s.customerName}</td>
                       <td className="py-4 px-4 text-slate-600 dark:text-slate-300 font-medium">{s.chitPlanName}</td>
@@ -285,7 +308,7 @@ export default function ReportsPage() {
                       <td className="py-4 px-4 text-center"><StatusBadge status="paid" /></td>
                     </tr>
                   ))}
-                  {subscriptionsList.filter(s => s.paymentStatus === 'paid').length === 0 && (
+                  {getPaidSubscriptions().length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-slate-500">No collections recorded for this period.</td>
                     </tr>
