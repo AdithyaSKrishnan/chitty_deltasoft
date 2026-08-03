@@ -11,6 +11,7 @@ import {
   fetchChitPlans,
   fetchCustomers,
   fetchSubscriptions,
+  updateSubscriptionPaymentStatus,
   mapApiError,
 } from '../../services/api';
 
@@ -24,6 +25,7 @@ export default function SubscriptionsPage() {
   const [chitPlans, setChitPlans] = useState<ChitPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -96,16 +98,88 @@ export default function SubscriptionsPage() {
     }
   };
 
+  const handlePaymentStatusChange = async (subId: string, newStatus: 'pending' | 'partial' | 'paid' | 'overdue') => {
+    setError('');
+    setUpdatingId(subId);
+    try {
+      await updateSubscriptionPaymentStatus(subId, newStatus);
+      await loadSubscriptions();
+    } catch (err) {
+      setError(mapApiError(err));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const generateInstallmentsForSub = (sub: any) => {
+    const baseDate = sub.joinedDate ? new Date(sub.joinedDate) : new Date('2026-04-05');
+    const count = 12;
+    const isPaid = sub.paymentStatus === 'paid';
+    const isOverdue = sub.paymentStatus === 'overdue';
+
+    const installments = [];
+    for (let i = 1; i <= count; i++) {
+      const dueDateObj = new Date(baseDate);
+      dueDateObj.setMonth(baseDate.getMonth() + (i - 1));
+
+      const dd = String(dueDateObj.getDate()).padStart(2, '0');
+      const mm = String(dueDateObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = dueDateObj.getFullYear();
+
+      let status: 'paid' | 'pending' | 'overdue' = 'pending';
+      if (i === 1) {
+        status = 'paid';
+      } else if (i === 2) {
+        status = isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending';
+      } else {
+        status = 'pending';
+      }
+
+      installments.push({
+        monthNumber: i,
+        dueDate: `${dd}/${mm}/${yyyy}`,
+        status,
+      });
+    }
+    return installments;
+  };
+
+  const getDynamicPaymentStatus = (sub: any) => {
+    const installments = generateInstallmentsForSub(sub);
+    const today = new Date();
+    
+    let latestDueInst = null;
+    for (const inst of installments) {
+      const parts = inst.dueDate.split('/');
+      if (parts.length === 3) {
+        const dueDateObj = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        if (dueDateObj <= today) {
+          latestDueInst = inst;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (!latestDueInst) {
+      return 'paid';
+    }
+
+    return latestDueInst.status;
+  };
+
   const columns = [
     {
       key: 'customerName',
       header: 'Customer',
       render: (sub: Subscription) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-500 flex items-center justify-center text-white font-semibold">
+          <div className="w-8 h-8 rounded-full bg-primary-500/10 text-primary-500 font-semibold flex items-center justify-center text-sm">
             {sub.customerName.charAt(0)}
           </div>
-          <p className="font-medium text-slate-800 dark:text-white">{sub.customerName}</p>
+          <div>
+            <p className="font-medium text-slate-800 dark:text-white">{sub.customerName}</p>
+          </div>
         </div>
       ),
     },
@@ -132,8 +206,8 @@ export default function SubscriptionsPage() {
     },
     {
       key: 'paymentStatus',
-      header: 'Payment',
-      render: (sub: Subscription) => <StatusBadge status={sub.paymentStatus} />,
+      header: 'Payment Status',
+      render: (sub: Subscription) => <StatusBadge status={getDynamicPaymentStatus(sub)} />,
     },
   ];
 

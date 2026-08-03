@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 // 🔴 LOCAL DEVELOPMENT BACKEND
-const API_BASE_URL = 'http://localhost:8000/api/';
+// const API_BASE_URL = 'http://localhost:8000/api/';
 
 // 🟢 LIVE PRODUCTION BACKEND (Uncomment when deploying live)
-// const API_BASE_URL = 'https://chittyapi.orianacare.com/api/';
+const API_BASE_URL = 'https://chittyapi.orianacare.com/api/';
 
 const ACCESS_TOKEN_KEY = 'chitty_access_token';
 const REFRESH_TOKEN_KEY = 'chitty_refresh_token';
@@ -202,6 +202,10 @@ export function mapSubscriptionFromApi(subscription) {
     suspended: 'paused',
   };
 
+  const monthlyPayment = Number(subscription.chit_plan_monthly_payment || subscription.monthly_payment || 5000);
+  const totalAmount = Number(subscription.chit_plan_total_amount || subscription.total_amount || 50000);
+  const numberOfInstallments = Number(subscription.number_of_installments || 10);
+
   return {
     id: String(subscription.id),
     customerId: String(subscription.customer),
@@ -212,6 +216,9 @@ export function mapSubscriptionFromApi(subscription) {
     joinedDate: subscription.joined_date,
     status: statusMap[subscription.subscription_status] || subscription.subscription_status,
     paymentStatus: subscription.payment_status,
+    monthlyPayment,
+    totalAmount,
+    numberOfInstallments,
     totalPaid: 0,
     remainingAmount: 0,
   };
@@ -591,6 +598,13 @@ export async function createSubscription({ customerId, chitPlanId, joinedDate })
     customer: Number(customerId),
     chit_plan: Number(chitPlanId),
     joined_date: joinedDate,
+  });
+  return mapSubscriptionFromApi(response.data);
+}
+
+export async function updateSubscriptionPaymentStatus(id, paymentStatus) {
+  const response = await api.patch(`subscriptions/${id}/`, {
+    payment_status: paymentStatus,
   });
   return mapSubscriptionFromApi(response.data);
 }

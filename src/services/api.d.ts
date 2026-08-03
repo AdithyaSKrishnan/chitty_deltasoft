@@ -93,6 +93,10 @@ export function createSubscription(data: {
   chitPlanId: string;
   joinedDate: string;
 }): Promise<Subscription>;
+export function updateSubscriptionPaymentStatus(
+  id: string,
+  paymentStatus: 'pending' | 'partial' | 'paid' | 'overdue'
+): Promise<Subscription>;
 
 export function fetchEmployees(params?: Record<string, string>): Promise<import('../types').Employee[]>;
 export function createEmployee(data: any): Promise<import('../types').Employee>;

@@ -76,6 +76,9 @@ export interface Subscription {
   joinedDate: string;
   status: 'active' | 'completed' | 'paused';
   paymentStatus: 'paid' | 'pending' | 'overdue';
+  monthlyPayment?: number;
+  totalAmount?: number;
+  numberOfInstallments?: number;
   totalPaid: number;
   remainingAmount: number;
 }

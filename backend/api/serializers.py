@@ -273,10 +273,18 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     customer_id_display = serializers.CharField(source='customer.customer_id', read_only=True)
     chit_plan_name = serializers.CharField(source='chit_plan.chit_name', read_only=True)
     chit_plan_code = serializers.CharField(source='chit_plan.plan_code', read_only=True)
+    chit_plan_monthly_payment = serializers.DecimalField(source='chit_plan.monthly_payment', max_digits=12, decimal_places=2, read_only=True)
+    chit_plan_total_amount = serializers.DecimalField(source='chit_plan.total_amount', max_digits=12, decimal_places=2, read_only=True)
+    number_of_installments = serializers.IntegerField(source='chit_plan.number_of_installments', read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['id', 'customer', 'customer_id_display', 'customer_name', 'chit_plan', 'chit_plan_code', 'chit_plan_name', 'payment_status', 'subscription_status', 'joined_date']
+        fields = [
+            'id', 'customer', 'customer_id_display', 'customer_name', 
+            'chit_plan', 'chit_plan_code', 'chit_plan_name', 
+            'chit_plan_monthly_payment', 'chit_plan_total_amount', 'number_of_installments',
+            'payment_status', 'subscription_status', 'joined_date'
+        ]
 
     def validate_customer(self, customer):
         return customer

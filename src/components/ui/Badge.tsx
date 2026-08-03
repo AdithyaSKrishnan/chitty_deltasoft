@@ -25,6 +25,8 @@ export function StatusBadge({ status }: { status: string }) {
     paused: { variant: 'warning', label: 'Paused' },
     pending: { variant: 'warning', label: 'Pending' },
     paid: { variant: 'success', label: 'Paid' },
+    advance_paid: { variant: 'success', label: 'Advance Paid' },
+    upcoming: { variant: 'info', label: 'Upcoming' },
     overdue: { variant: 'danger', label: 'Overdue' },
     approved: { variant: 'success', label: 'Approved' },
     rejected: { variant: 'danger', label: 'Rejected' },

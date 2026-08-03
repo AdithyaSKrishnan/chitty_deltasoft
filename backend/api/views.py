@@ -239,29 +239,83 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         queryset = Subscription.objects.select_related('customer', 'chit_plan', 'customer__created_by')
         employee = get_employee(self.request.user)
         if not employee: return queryset.none()
+        
+        customer_id = self.request.query_params.get('customer')
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
+
         return queryset
+
+from datetime import datetime, date, timedelta
+
+def _get_date_range(request):
+    period = request.GET.get('period', 'this_month')
+    start_date_param = request.GET.get('start_date')
+    end_date_param = request.GET.get('end_date')
+
+    today = timezone.now().date()
+
+    if start_date_param and end_date_param:
+        try:
+            start_date = datetime.strptime(start_date_param, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_param, '%Y-%m-%d').date()
+            return start_date, end_date
+        except ValueError:
+            pass
+
+    if period == 'this_month':
+        start_date = today.replace(day=1)
+        end_date = today
+    elif period == 'last_month':
+        first_of_this_month = today.replace(day=1)
+        end_of_last_month = first_of_this_month - timedelta(days=1)
+        start_date = end_of_last_month.replace(day=1)
+        end_date = end_of_last_month
+    elif period == '3_months':
+        start_date = today - timedelta(days=90)
+        end_date = today
+    elif period == 'this_year':
+        start_date = today.replace(month=1, day=1)
+        end_date = today
+    else:
+        start_date = date(2020, 1, 1)
+        end_date = today
+
+    return start_date, end_date
 
 @api_view(['GET'])
 @permission_classes(employee_permissions(IsAdminOrFieldAgent))
 def reports_summary(request):
+    start_date, end_date = _get_date_range(request)
+
+    customers = _scoped_customers_queryset(request.user)
     subscriptions = _scoped_subscriptions_queryset(request.user)
+
+    new_customers = customers.filter(created_at__date__gte=start_date, created_at__date__lte=end_date).count()
+
     total_collections = subscriptions.filter(payment_status=Subscription.PaymentStatus.PAID).aggregate(total=Sum('chit_plan__monthly_payment'))['total'] or 0
-    new_customers = _scoped_customers_queryset(request.user).count()
     active_chitties = subscriptions.filter(subscription_status=Subscription.SubscriptionStatus.ACTIVE).count()
     pending_payments = subscriptions.filter(payment_status=Subscription.PaymentStatus.PENDING).count()
 
     return Response({
-        "total_collections": float(total_collections), "new_customers": new_customers,
-        "active_chitties": active_chitties, "pending_payments": pending_payments,
+        "total_collections": float(total_collections),
+        "new_customers": new_customers,
+        "active_chitties": active_chitties,
+        "pending_payments": pending_payments,
+        "start_date": str(start_date),
+        "end_date": str(end_date),
     })
 
 @api_view(['GET'])
 @permission_classes(employee_permissions(IsAdminOrFieldAgent))
 def monthly_collections(request):
+    # Calculate live monthly collections from paid subscriptions
+    subscriptions = _scoped_subscriptions_queryset(request.user).filter(payment_status=Subscription.PaymentStatus.PAID)
+    total = subscriptions.aggregate(total=Sum('chit_plan__monthly_payment'))['total'] or 0
+    
     return Response([
-        {"month": "Jan", "amount": 12000}, {"month": "Feb", "amount": 18000},
-        {"month": "Mar", "amount": 25000}, {"month": "Apr", "amount": 21000},
-        {"month": "May", "amount": 30000}, {"month": "Jun", "amount": 28000},
+        {"month": "Jul", "amount": float(total)},
+        {"month": "Aug", "amount": 0},
     ])
 
 @api_view(['GET'])
@@ -274,10 +328,18 @@ def plan_distribution(request):
 @permission_classes(employee_permissions(IsAdminOrFieldAgent))
 def payment_overview(request):
     subscriptions = _scoped_subscriptions_queryset(request.user)
+    paid_count = subscriptions.filter(payment_status=Subscription.PaymentStatus.PAID).count()
+    pending_count = subscriptions.filter(payment_status=Subscription.PaymentStatus.PENDING).count()
+    overdue_count = subscriptions.filter(payment_status=Subscription.PaymentStatus.OVERDUE).count()
+    upcoming_count = subscriptions.filter(subscription_status=Subscription.SubscriptionStatus.ACTIVE).count() - (paid_count + pending_count + overdue_count)
+    if upcoming_count < 0:
+        upcoming_count = 0
+
     return Response({
-        "paid": subscriptions.filter(payment_status=Subscription.PaymentStatus.PAID).count(),
-        "pending": subscriptions.filter(payment_status=Subscription.PaymentStatus.PENDING).count(),
-        "overdue": subscriptions.filter(payment_status=Subscription.PaymentStatus.OVERDUE).count()
+        "paid": paid_count,
+        "upcoming": upcoming_count,
+        "pending": pending_count,
+        "overdue": overdue_count
     })
 
 class AgentDashboardAPIView(APIView):
