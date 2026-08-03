@@ -204,7 +204,7 @@ export function mapSubscriptionFromApi(subscription) {
 
   const monthlyPayment = Number(subscription.chit_plan_monthly_payment || subscription.monthly_payment || 5000);
   const totalAmount = Number(subscription.chit_plan_total_amount || subscription.total_amount || 50000);
-  const numberOfInstallments = Number(subscription.number_of_installments || 10);
+  const numberOfInstallments = Number(subscription.number_of_installments || 20);
 
   return {
     id: String(subscription.id),

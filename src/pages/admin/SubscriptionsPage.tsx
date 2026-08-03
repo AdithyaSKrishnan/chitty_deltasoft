@@ -120,7 +120,7 @@ export default function SubscriptionsPage() {
   const generateInstallments = (sub: any) => {
     const installments = [];
     const baseDate = sub.joinedDate ? new Date(sub.joinedDate) : new Date('2026-04-05');
-    const count = sub.numberOfInstallments || 12;
+    const count = Number(sub.numberOfInstallments || 20);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
