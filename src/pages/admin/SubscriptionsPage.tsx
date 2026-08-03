@@ -188,15 +188,6 @@ export default function SubscriptionsPage() {
       header: 'Chit Plan',
     },
     {
-      key: 'monthlyPayment',
-      header: 'Monthly Amount',
-      render: (sub: Subscription) => (
-        <span className="font-semibold text-slate-800 dark:text-white">
-          ₹{(sub.monthlyPayment || 5000).toLocaleString('en-IN')}
-        </span>
-      ),
-    },
-    {
       key: 'joinedDate',
       header: 'Joined Date',
       render: (sub: Subscription) => (

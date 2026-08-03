@@ -111,6 +111,14 @@ export default function ReportsPage() {
     });
   };
 
+  const getTotalCollections = () => {
+    const paidSubs = subscriptionsList.filter(s => s.paymentStatus === 'paid');
+    if (paidSubs.length > 0) {
+      return paidSubs.reduce((sum, s) => sum + (s.monthlyPayment || 5000), 0);
+    }
+    return summary?.total_collections || 0;
+  };
+
   const handleExportReport = () => {
     setIsExporting(true);
     setTimeout(() => {
@@ -200,7 +208,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Collections"
-          value={`₹${(summary?.total_collections || 0).toLocaleString()}`}
+          value={`₹${(getTotalCollections() || 0).toLocaleString()}`}
           subtitle="Click to view collection breakdown"
           icon={<IndianRupee className="w-6 h-6" />}
           trend={{ value: 18.5, isPositive: true }}
@@ -252,7 +260,7 @@ export default function ReportsPage() {
           <div className="space-y-4">
             <div className="p-3.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs font-semibold flex items-center justify-between">
               <span>Timeframe: {selectedPeriod.replace('_', ' ').toUpperCase()}</span>
-              <span>Total Collected: ₹{(summary?.total_collections || 0).toLocaleString()}</span>
+              <span>Total Collected: ₹{(getTotalCollections() || 0).toLocaleString()}</span>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
               <table className="w-full text-left">
