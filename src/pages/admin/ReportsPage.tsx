@@ -176,6 +176,40 @@ export default function ReportsPage() {
     return summary?.total_collections || 0;
   };
 
+  const getCollectionsTrendData = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+    const totalCollectedMap: Record<string, number> = {
+      'Jan': 0,
+      'Feb': 0,
+      'Mar': 0,
+      'Apr': 0,
+      'May': 0,
+      'Jun': 5000,
+      'Jul': 10000,
+      'Aug': 5000,
+    };
+
+    const paidList = getPaidInstallmentsList();
+    if (paidList.length > 0) {
+      let totalAug = 0;
+      let totalJul = 0;
+      paidList.forEach((item) => {
+        if (item.paidDate && item.paidDate.includes('07/2026')) {
+          totalJul += item.monthlyPayment;
+        } else if (item.paidDate && (item.paidDate.includes('08/2026') || item.paidDate === 'Today')) {
+          totalAug += item.monthlyPayment;
+        }
+      });
+      if (totalJul > 0) totalCollectedMap['Jul'] = totalJul;
+      if (totalAug > 0) totalCollectedMap['Aug'] = totalAug;
+    }
+
+    return months.map((m) => ({
+      month: m,
+      amount: totalCollectedMap[m] || 0,
+    }));
+  };
+
   const handleExportReport = () => {
     setIsExporting(true);
     setTimeout(() => {
@@ -184,6 +218,9 @@ export default function ReportsPage() {
       setTimeout(() => setExportSuccess(false), 3000);
     }, 1000);
   };
+
+  const trendData = getCollectionsTrendData();
+  const maxTrendAmount = Math.max(...trendData.map((d) => d.amount), 10000);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -474,28 +511,37 @@ export default function ReportsPage() {
                 Collections Trend
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {selectedPeriod === 'this_month' && 'Current month weekly collections'}
-                {selectedPeriod === 'last_month' && 'Last month weekly collections'}
-                {selectedPeriod === '3_months' && 'Last 3 months collections'}
-                {selectedPeriod === 'this_year' && 'Yearly monthly collections'}
-                {selectedPeriod === 'custom' && 'Custom date range breakdown'}
+                Monthly collection breakdown
               </p>
             </div>
           </div>
-          <div className="h-64 flex items-end justify-around gap-4 px-4">
-            {monthlyData.map((item, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 flex-1">
-                <div
-                  className="w-full rounded-t-lg bg-gradient-to-t from-primary-500 to-primary-400 transition-all hover:from-primary-600 hover:to-primary-500 shadow-sm"
-                  style={{
-                    height: `${Math.min((item.amount / 50000) * 100 + 20, 100)}%`,
-                  }}
-                />
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {item.month}
-                </span>
-              </div>
-            ))}
+
+          <div className="h-64 flex items-end justify-around gap-2 sm:gap-3 px-2 sm:px-4 pt-6 pb-2">
+            {trendData.map((item, i) => {
+              const heightPercent = item.amount > 0 ? Math.max((item.amount / maxTrendAmount) * 100, 18) : 4;
+              return (
+                <div key={i} className="flex flex-col items-center gap-2 flex-1 group relative h-full justify-end">
+                  {item.amount > 0 && (
+                    <div className="mb-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary-500 text-white shadow-sm transition-transform group-hover:scale-110">
+                      ₹{(item.amount / 1000).toFixed(0)}k
+                    </div>
+                  )}
+                  <div className="w-full bg-slate-100 dark:bg-slate-800/60 rounded-t-lg h-44 flex items-end overflow-hidden p-1">
+                    <div
+                      className={`w-full rounded-t-md transition-all duration-500 ${
+                        item.amount > 0
+                          ? 'bg-gradient-to-t from-primary-600 via-primary-500 to-indigo-500 group-hover:from-primary-500 group-hover:to-indigo-400 shadow-md'
+                          : 'bg-slate-300 dark:bg-slate-700/40'
+                      }`}
+                      style={{ height: `${heightPercent}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {item.month}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </Card>
 
